@@ -3,358 +3,329 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Painel de gestão da jornada artística da Vale Produção." />
   <title>Vale Produção | Artist Flow</title>
+  <meta name="description" content="Painel operacional para gestão completa da jornada de cantores e bandas." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./assets/styles.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
-        <img src="assets/logo.svg" alt="Logo Vale Produção" class="brand-logo" />
+      <div class="brand-card">
+        <div class="brand-mark">VP</div>
         <div>
-          <p class="eyebrow">Painel operacional</p>
-          <h1>Artist Flow</h1>
-          <span class="brand-subtitle">Vale Produção</span>
+          <h1>Vale Produção</h1>
+          <p>Artist Flow Manager</p>
         </div>
       </div>
 
-      <nav class="menu">
-        <button class="menu-link active" data-section="dashboard">Dashboard</button>
-        <button class="menu-link" data-section="artists">Artistas</button>
-        <button class="menu-link" data-section="projects">Projetos</button>
-        <button class="menu-link" data-section="calendar">Agenda crítica</button>
-        <button class="menu-link" data-section="reports">Relatórios</button>
-        <button class="menu-link" data-section="roadmap">Fluxo oficial</button>
+      <nav class="nav-list">
+        <button class="nav-btn active" data-section="dashboard">Dashboard</button>
+        <button class="nav-btn" data-section="artists">Artistas</button>
+        <button class="nav-btn" data-section="projects">Projetos</button>
+        <button class="nav-btn" data-section="calendar">Calendário</button>
+        <button class="nav-btn" data-section="reports">Relatórios</button>
+        <button class="nav-btn" data-section="integrations">Integrações</button>
+        <button class="nav-btn" data-section="settings">Configurações</button>
       </nav>
 
-      <div class="sidebar-card">
-        <p class="card-label">Regra de segurança</p>
-        <h3>Bloqueio de lançamento</h3>
-        <p>Projetos com data ativa e checklist incompleto entram em risco alto automaticamente.</p>
-      </div>
-
-      <div class="build-tag">
-        <strong>Build:</strong>
-        <span>v1.0.0-fase1</span>
-        <small>27/03/2026 • 10:38 BRT</small>
+      <div class="build-panel">
+        <strong>Build atual</strong>
+        <span id="buildVersion"></span>
+        <span id="buildTime"></span>
       </div>
     </aside>
 
     <main class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Central de produção musical</p>
-          <h2>Controle da jornada completa do artista</h2>
+          <h2 id="sectionTitle">Dashboard</h2>
+          <p id="sectionSubtitle">Visão geral dos projetos e alertas críticos.</p>
         </div>
         <div class="topbar-actions">
-          <button class="btn btn-secondary" id="loadDemoBtn">Carregar demo</button>
-          <button class="btn btn-ghost" id="resetDataBtn">Limpar dados</button>
+          <button id="seedDemoBtn" class="ghost-btn">Carregar exemplo</button>
+          <button id="exportBtn" class="primary-btn">Exportar dados</button>
         </div>
       </header>
 
       <section class="section active" id="dashboard">
         <div class="hero-card">
           <div>
-            <p class="eyebrow">Fase 1 entregue</p>
-            <h3>Um painel gratuito para impedir esquecimentos, atrasos e lançamentos indevidos</h3>
-            <p>Cadastre artistas, acompanhe singles/EPs/álbuns, controle arte visual, posts, calendário e alertas críticos.</p>
+            <span class="eyebrow">Operação central</span>
+            <h3>Controle completo da jornada do artista, da entrada ao pós-lançamento.</h3>
+            <p>Monitore briefing, contrato, produção, arte, posts, distribuição e acompanhamento com alertas automáticos internos.</p>
           </div>
-          <div class="hero-stats" id="heroStats"></div>
+          <div class="hero-actions">
+            <button class="primary-btn" data-open-modal="artistModal">Novo artista</button>
+            <button class="secondary-btn" data-open-modal="projectModal">Novo projeto</button>
+          </div>
         </div>
 
-        <div class="grid three">
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="grid-two">
           <article class="panel">
-            <div class="panel-head">
+            <div class="panel-header">
               <h3>Alertas críticos</h3>
-              <span class="badge badge-danger" id="criticalCount">0</span>
+              <span class="pill pill-danger">Prioridade máxima</span>
             </div>
             <div id="criticalAlerts" class="stack-list"></div>
           </article>
 
           <article class="panel">
-            <div class="panel-head">
-              <h3>Próximos prazos</h3>
-              <span class="badge badge-warning" id="upcomingCount">0</span>
+            <div class="panel-header">
+              <h3>Próximos marcos</h3>
+              <span class="pill">7 dias</span>
             </div>
             <div id="upcomingDeadlines" class="stack-list"></div>
           </article>
+        </div>
 
+        <div class="grid-two">
           <article class="panel">
-            <div class="panel-head">
-              <h3>Status geral</h3>
-              <span class="badge badge-info">ao vivo</span>
+            <div class="panel-header">
+              <h3>Pipeline por etapa</h3>
             </div>
-            <div id="statusSummary" class="progress-list"></div>
+            <div id="pipelineBoard" class="pipeline-board"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Checklist de segurança operacional</h3>
+            </div>
+            <div id="opsChecklist" class="checklist-card"></div>
           </article>
         </div>
       </section>
 
       <section class="section" id="artists">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Cadastro base</p>
-            <h3>Artistas e bandas</h3>
-          </div>
-        </div>
-
-        <div class="grid split">
-          <article class="panel form-panel">
-            <h3>Novo artista</h3>
-            <form id="artistForm">
-              <div class="field-grid">
-                <label>
-                  Nome artístico
-                  <input name="name" required placeholder="Ex.: Aurora Lima" />
-                </label>
-                <label>
-                  Tipo
-                  <select name="type" required>
-                    <option value="Solo">Solo</option>
-                    <option value="Banda">Banda</option>
-                    <option value="Dupla">Dupla</option>
-                    <option value="Ministério">Ministério</option>
-                  </select>
-                </label>
-                <label>
-                  Gênero / nicho
-                  <input name="genre" placeholder="Ex.: Gospel pop" />
-                </label>
-                <label>
-                  Contato principal
-                  <input name="contact" placeholder="WhatsApp ou e-mail" />
-                </label>
-              </div>
-              <label>
-                Observações iniciais
-                <textarea name="notes" rows="4" placeholder="Resumo do perfil, objetivos e situação atual"></textarea>
-              </label>
-              <button class="btn btn-primary" type="submit">Salvar artista</button>
-            </form>
-          </article>
-
-          <article class="panel">
-            <div class="panel-head">
-              <h3>Base cadastrada</h3>
-              <span class="badge badge-info" id="artistCount">0 artistas</span>
+        <div class="panel section-panel">
+          <div class="panel-header split-header">
+            <div>
+              <h3>Cadastro de artistas e bandas</h3>
+              <p>Perfis com links de formulários, contrato, briefing visual e links externos.</p>
             </div>
-            <div id="artistList" class="cards-list"></div>
-          </article>
+            <button class="primary-btn" data-open-modal="artistModal">Adicionar artista</button>
+          </div>
+          <div id="artistList" class="card-grid"></div>
         </div>
       </section>
 
       <section class="section" id="projects">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Pipeline operacional</p>
-            <h3>Singles, EPs e álbuns</h3>
-          </div>
-        </div>
-
-        <div class="grid split">
-          <article class="panel form-panel">
-            <h3>Novo projeto</h3>
-            <form id="projectForm">
-              <div class="field-grid">
-                <label>
-                  Artista
-                  <select name="artistId" id="artistSelect" required></select>
-                </label>
-                <label>
-                  Tipo do projeto
-                  <select name="format" required>
-                    <option value="Single">Single</option>
-                    <option value="EP">EP</option>
-                    <option value="Álbum">Álbum</option>
-                  </select>
-                </label>
-                <label>
-                  Título do projeto
-                  <input name="title" required placeholder="Nome do lançamento" />
-                </label>
-                <label>
-                  Data de lançamento
-                  <input name="releaseDate" type="date" required />
-                </label>
-                <label>
-                  Status atual
-                  <select name="status" required>
-                    <option value="Briefing">Briefing</option>
-                    <option value="Contrato">Contrato</option>
-                    <option value="Pré-produção">Pré-produção</option>
-                    <option value="Produção">Produção</option>
-                    <option value="Divulgação">Divulgação</option>
-                    <option value="Lançado">Lançado</option>
-                  </select>
-                </label>
-                <label>
-                  Checklist concluído?
-                  <select name="checklistReady" required>
-                    <option value="nao">Não</option>
-                    <option value="sim">Sim</option>
-                  </select>
-                </label>
-              </div>
-              <label>
-                Observações e pendências
-                <textarea name="notes" rows="4" placeholder="Pendências de áudio, arte, postagem, release ou distribuição"></textarea>
-              </label>
-
-              <div class="check-grid">
-                <label><input type="checkbox" name="steps" value="briefing" checked /> Briefing artístico</label>
-                <label><input type="checkbox" name="steps" value="contract" /> Contrato</label>
-                <label><input type="checkbox" name="steps" value="preproduction" /> Pré-produção</label>
-                <label><input type="checkbox" name="steps" value="recording" /> Captação / gravação</label>
-                <label><input type="checkbox" name="steps" value="master" /> Mix / master</label>
-                <label><input type="checkbox" name="steps" value="visual" /> Arte e identidade visual</label>
-                <label><input type="checkbox" name="steps" value="release" /> Release</label>
-                <label><input type="checkbox" name="steps" value="posts" /> Cronograma de posts</label>
-                <label><input type="checkbox" name="steps" value="distribution" /> Envio para plataforma</label>
-                <label><input type="checkbox" name="steps" value="postlaunch" /> Pós-lançamento</label>
-              </div>
-
-              <button class="btn btn-primary" type="submit">Salvar projeto</button>
-            </form>
-          </article>
-
-          <article class="panel">
-            <div class="panel-head">
-              <h3>Projetos em andamento</h3>
-              <div class="inline-actions">
-                <button class="btn btn-secondary small" id="exportJsonBtn">Exportar JSON</button>
-                <button class="btn btn-secondary small" id="exportCsvBtn">Exportar CSV</button>
-              </div>
+        <div class="panel section-panel">
+          <div class="panel-header split-header">
+            <div>
+              <h3>Projetos ativos</h3>
+              <p>Singles, EPs, álbuns e campanhas com linha do tempo completa.</p>
             </div>
-            <div id="projectList" class="project-list"></div>
-          </article>
+            <button class="primary-btn" data-open-modal="projectModal">Novo projeto</button>
+          </div>
+          <div id="projectList" class="stack-list"></div>
         </div>
       </section>
 
       <section class="section" id="calendar">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Datas críticas</p>
-            <h3>Agenda e alertas internos</h3>
-          </div>
-        </div>
-
-        <div class="grid two">
+        <div class="grid-two equal-height">
           <article class="panel">
-            <h3>Linha do tempo operacional</h3>
-            <div id="timelineList" class="timeline"></div>
+            <div class="panel-header">
+              <h3>Agenda operacional</h3>
+              <span class="pill">Interna</span>
+            </div>
+            <div id="calendarList" class="stack-list"></div>
           </article>
           <article class="panel">
-            <h3>Integrações previstas para fase 2</h3>
+            <div class="panel-header">
+              <h3>Integração com Google Calendar</h3>
+            </div>
             <div class="integration-note">
-              <div class="note-item">
-                <strong>Google Forms</strong>
-                <p>Entrada do artista, formulário contratual, briefing da arte e planejamento de posts.</p>
-              </div>
-              <div class="note-item">
-                <strong>Google Calendar</strong>
-                <p>Eventos automáticos para gravação, entrega da capa, envio para distribuidora e lançamento.</p>
-              </div>
-              <div class="note-item">
-                <strong>Autentique</strong>
-                <p>Assinatura digital do contrato, exigindo integração segura fora do GitHub Pages.</p>
-              </div>
-              <div class="note-item">
-                <strong>Canva / direção visual</strong>
-                <p>Salvar links da capa, variações de feed, story e reels na etapa visual.</p>
-              </div>
+              <p>Esta fase já deixa o sistema pronto para trabalhar com seus links e IDs. A sincronização automática real depende de configurar o Google Apps Script incluso no ZIP.</p>
+              <ul>
+                <li>Arquivo guia: <strong>docs/integracoes-google.md</strong></li>
+                <li>Template pronto: <strong>apps-script/Code.gs</strong></li>
+                <li>Manifesto: <strong>apps-script/appsscript.json</strong></li>
+              </ul>
+              <a class="link-btn" href="./docs/integracoes-google.md" target="_blank" rel="noreferrer">Abrir guia de integração</a>
             </div>
           </article>
         </div>
       </section>
 
       <section class="section" id="reports">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Visão executiva</p>
-            <h3>Relatórios do produtor</h3>
-          </div>
-        </div>
-
-        <div class="grid three">
-          <article class="panel report-card">
-            <h3>Lançamentos em risco</h3>
-            <div class="big-number" id="riskProjects">0</div>
-            <p>Projetos com lançamento próximo e checklist incompleto.</p>
+        <div class="grid-two">
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Resumo operacional</h3>
+            </div>
+            <div id="reportSummary" class="report-summary"></div>
           </article>
-          <article class="panel report-card">
-            <h3>Projetos sem contrato</h3>
-            <div class="big-number" id="missingContract">0</div>
-            <p>Base para cobrar pendências documentais logo no início.</p>
-          </article>
-          <article class="panel report-card">
-            <h3>Visual / posts pendentes</h3>
-            <div class="big-number" id="visualPending">0</div>
-            <p>Projetos sem arte final ou sem cronograma de divulgação marcado.</p>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Exportação</h3>
+            </div>
+            <div class="export-box">
+              <p>Exporte todos os dados em JSON para backup ou em CSV para análise e planilhas.</p>
+              <div class="button-row">
+                <button id="exportJsonBtn" class="primary-btn">Exportar JSON</button>
+                <button id="exportCsvBtn" class="secondary-btn">Exportar CSV</button>
+              </div>
+            </div>
           </article>
         </div>
       </section>
 
-      <section class="section" id="roadmap">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Planejamento do projeto</p>
-            <h3>Etapas previstas até a versão completa</h3>
-          </div>
+      <section class="section" id="integrations">
+        <div class="grid-two equal-height">
+          <article class="panel">
+            <div class="panel-header"><h3>Links configuráveis</h3></div>
+            <form id="integrationForm" class="form-grid">
+              <label>
+                <span>Formulário inicial do artista</span>
+                <input type="url" name="artistIntakeForm" placeholder="https://forms.gle/..." />
+              </label>
+              <label>
+                <span>Formulário de contrato</span>
+                <input type="url" name="contractForm" placeholder="https://forms.gle/..." />
+              </label>
+              <label>
+                <span>Formulário de briefing visual</span>
+                <input type="url" name="visualBriefForm" placeholder="https://forms.gle/..." />
+              </label>
+              <label>
+                <span>Planilha operacional</span>
+                <input type="url" name="sheetUrl" placeholder="https://docs.google.com/spreadsheets/..." />
+              </label>
+              <label>
+                <span>Calendário principal</span>
+                <input type="url" name="calendarUrl" placeholder="https://calendar.google.com/..." />
+              </label>
+              <label>
+                <span>Autentique / contratos</span>
+                <input type="url" name="autentiqueUrl" placeholder="https://..." />
+              </label>
+              <label>
+                <span>Canva / arte</span>
+                <input type="url" name="canvaUrl" placeholder="https://www.canva.com/..." />
+              </label>
+              <label>
+                <span>ONErpm / distribuição</span>
+                <input type="url" name="onerpmUrl" placeholder="https://onerpm.com/..." />
+              </label>
+              <div class="button-row full-width">
+                <button type="submit" class="primary-btn">Salvar integrações</button>
+              </div>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><h3>Regras invioláveis</h3></div>
+            <div class="rules-box">
+              <div class="rule-item"><strong>Regra 1:</strong> todo avanço do projeto deve ser entregue em ZIP completo, com todos os arquivos.</div>
+              <div class="rule-item"><strong>Regra 2:</strong> toda evolução deve informar versão e data/hora de build para rastreio.</div>
+              <div class="rule-item"><strong>Regra 3 operacional:</strong> nenhum lançamento deve seguir sem checklist completo de áudio, arte, metadata e divulgação.</div>
+              <div class="rule-item"><strong>Regra 4 operacional:</strong> toda remarcação de data precisa gerar novo alerta e novo marco no calendário.</div>
+            </div>
+          </article>
         </div>
+      </section>
 
-        <div class="roadmap-grid">
-          <article class="panel roadmap-card done">
-            <span class="roadmap-stage">Fase 1</span>
-            <h3>MVP local no GitHub</h3>
-            <p>Painel estático, cadastro de artistas, projetos, timeline, alertas de risco, exportação e build visível.</p>
+      <section class="section" id="settings">
+        <div class="grid-two">
+          <article class="panel">
+            <div class="panel-header"><h3>Configurações gerais</h3></div>
+            <form id="settingsForm" class="form-grid">
+              <label>
+                <span>Dias de alerta para lançamento</span>
+                <input type="number" min="1" max="120" name="releaseAlertDays" value="30" />
+              </label>
+              <label>
+                <span>Dias de alerta para posts</span>
+                <input type="number" min="1" max="60" name="postAlertDays" value="7" />
+              </label>
+              <label>
+                <span>Dias de alerta para contrato</span>
+                <input type="number" min="1" max="60" name="contractAlertDays" value="5" />
+              </label>
+              <label>
+                <span>Nome do produtor responsável</span>
+                <input type="text" name="producerName" placeholder="Jonatan Vale" />
+              </label>
+              <div class="button-row full-width">
+                <button type="submit" class="primary-btn">Salvar configurações</button>
+                <button type="button" id="resetBtn" class="ghost-btn">Restaurar app</button>
+              </div>
+            </form>
           </article>
-          <article class="panel roadmap-card">
-            <span class="roadmap-stage">Fase 2</span>
-            <h3>Integrações Google</h3>
-            <p>Google Forms, Sheets, Calendar e Apps Script para sincronizar formulários, tarefas e lembretes reais.</p>
-          </article>
-          <article class="panel roadmap-card">
-            <span class="roadmap-stage">Fase 3</span>
-            <h3>Contratos e operação segura</h3>
-            <p>Integração com Autentique, histórico de remarcações e validações mais rígidas por projeto.</p>
-          </article>
-          <article class="panel roadmap-card">
-            <span class="roadmap-stage">Fase 4</span>
-            <h3>Portal premium</h3>
-            <p>Login, banco em nuvem, portal do artista, notificações push e aprovações compartilhadas.</p>
+          <article class="panel">
+            <div class="panel-header"><h3>Estado do sistema</h3></div>
+            <div id="systemState" class="state-box"></div>
           </article>
         </div>
       </section>
     </main>
   </div>
 
-  <template id="artistCardTemplate">
-    <article class="artist-card card">
-      <div>
-        <h4 class="artist-name"></h4>
-        <p class="artist-meta"></p>
+  <dialog id="artistModal" class="modal">
+    <form method="dialog" class="modal-card" id="artistForm">
+      <div class="modal-header">
+        <h3>Novo artista ou banda</h3>
+        <button type="submit" class="close-btn">×</button>
       </div>
-      <p class="artist-notes"></p>
-    </article>
-  </template>
+      <div class="form-grid">
+        <label><span>Nome artístico</span><input type="text" name="name" required /></label>
+        <label><span>Tipo</span><select name="type"><option value="Solo">Solo</option><option value="Banda">Banda</option><option value="Dupla">Dupla</option></select></label>
+        <label><span>WhatsApp</span><input type="text" name="phone" /></label>
+        <label><span>E-mail</span><input type="email" name="email" /></label>
+        <label><span>Estilo musical</span><input type="text" name="genre" /></label>
+        <label><span>Link do formulário inicial</span><input type="url" name="intakeForm" /></label>
+        <label><span>Link do formulário contratual</span><input type="url" name="contractForm" /></label>
+        <label><span>Link briefing visual</span><input type="url" name="visualForm" /></label>
+        <label class="full-width"><span>Observações</span><textarea name="notes" rows="4"></textarea></label>
+      </div>
+      <div class="button-row end">
+        <button value="cancel" class="ghost-btn">Cancelar</button>
+        <button type="submit" value="default" class="primary-btn">Salvar artista</button>
+      </div>
+    </form>
+  </dialog>
 
-  <template id="projectCardTemplate">
-    <article class="project-card card">
-      <div class="project-top">
-        <div>
-          <h4 class="project-title"></h4>
-          <p class="project-meta"></p>
+  <dialog id="projectModal" class="modal">
+    <form method="dialog" class="modal-card wide" id="projectForm">
+      <div class="modal-header">
+        <h3>Novo projeto musical</h3>
+        <button type="submit" class="close-btn">×</button>
+      </div>
+      <div class="form-grid">
+        <label><span>Título</span><input type="text" name="title" required /></label>
+        <label><span>Artista</span><select name="artistId" id="projectArtistSelect"></select></label>
+        <label><span>Formato</span><select name="format"><option value="Single">Single</option><option value="EP">EP</option><option value="Álbum">Álbum</option><option value="Campanha">Campanha</option></select></label>
+        <label><span>Data de lançamento</span><input type="date" name="releaseDate" required /></label>
+        <label><span>Status geral</span><select name="status"><option value="Em briefing">Em briefing</option><option value="Pré-produção">Pré-produção</option><option value="Produção">Produção</option><option value="Divulgação">Divulgação</option><option value="Lançado">Lançado</option></select></label>
+        <label><span>Link no Canva</span><input type="url" name="canvaLink" /></label>
+        <label><span>Link do contrato</span><input type="url" name="contractLink" /></label>
+        <label><span>Link ONErpm</span><input type="url" name="distributionLink" /></label>
+        <label><span>Data de gravação</span><input type="date" name="recordingDate" /></label>
+        <label><span>Data limite da arte</span><input type="date" name="artDeadline" /></label>
+        <label><span>Data limite dos posts</span><input type="date" name="postDeadline" /></label>
+        <label class="full-width"><span>Observações</span><textarea name="notes" rows="4"></textarea></label>
+      </div>
+      <div class="checklist-editor">
+        <h4>Checklist essencial</h4>
+        <div class="checklist-grid">
+          <label><input type="checkbox" name="check_audio" /> Áudio final aprovado</label>
+          <label><input type="checkbox" name="check_cover" /> Capa aprovada</label>
+          <label><input type="checkbox" name="check_metadata" /> Metadata revisada</label>
+          <label><input type="checkbox" name="check_release" /> Release produzido</label>
+          <label><input type="checkbox" name="check_posts" /> Posts planejados</label>
+          <label><input type="checkbox" name="check_pitch" /> Estratégia pós-lançamento</label>
         </div>
-        <span class="project-risk badge"></span>
       </div>
-      <p class="project-notes"></p>
-      <div class="chip-row project-steps"></div>
-    </article>
-  </template>
+      <div class="button-row end">
+        <button value="cancel" class="ghost-btn">Cancelar</button>
+        <button type="submit" value="default" class="primary-btn">Salvar projeto</button>
+      </div>
+    </form>
+  </dialog>
 
-  <script src="app.js"></script>
+  <script src="./assets/app.js"></script>
 </body>
 </html>
