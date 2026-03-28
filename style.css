@@ -1,3 +1,4 @@
-body{{font-family:Arial;background:#0c1420;color:#fff;padding:20px}}
-input,select,button{{padding:10px;margin:5px}}
-.hidden{{display:none}}
+body{font-family:Arial;background:#0b1220;color:#fff;padding:20px}
+.panel{background:#111a2b;padding:15px;margin:10px;border-radius:10px}
+.card{background:#1b2a44;padding:10px;margin:5px;border-radius:8px}
+input,select,button{margin:5px;padding:8px}

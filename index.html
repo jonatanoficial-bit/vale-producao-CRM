@@ -1,69 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Vale Produção Fase 11</title>
-<style>
-body{font-family:Arial;background:#0b1220;color:#fff;padding:20px}
-.card{background:#111a2b;padding:15px;margin:10px;border-radius:10px}
-button,input,select{margin:5px;padding:8px}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vale Produção Fase 14</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>Vale Produção - Sistema Completo</h1>
-<p>v11.0.0 | 2026-03-28 16:01:49</p>
+<h1>Vale Produção - Painel de Negócio</h1>
+<p>v14.0.0 | 2026-03-28 16:06:52</p>
 
-<div class="card">
+<div class="panel">
 <h2>Projetos</h2>
-<input id="projNome" placeholder="Nome projeto">
-<input id="projData" type="date">
-<button onclick="addProjeto()">Adicionar</button>
-<div id="listaProjetos"></div>
+<input id="nome" placeholder="Projeto">
+<input id="data" type="date">
+<input id="valor" type="number" placeholder="Receita prevista">
+<button onclick="addProjeto()">Salvar</button>
+<div id="projetos"></div>
 </div>
 
-<div class="card">
+<div class="panel">
 <h2>Financeiro</h2>
-<input id="finProj" placeholder="Projeto">
-<input id="finValor" type="number">
-<select id="finTipo"><option>Entrada</option><option>Saída</option></select>
+<input id="fProj" placeholder="Projeto">
+<input id="fValor" type="number">
+<select id="fTipo"><option>Entrada</option><option>Saída</option></select>
 <button onclick="addFinance()">Salvar</button>
-<div id="listaFinance"></div>
+<div id="finance"></div>
 </div>
 
-<div class="card">
-<h2>Cronograma</h2>
-<input id="cronProj" placeholder="Projeto">
-<input id="cronDesc" placeholder="Etapa">
-<input id="cronData" type="date">
-<button onclick="addCron()">Salvar</button>
-<div id="listaCron"></div>
+<div class="panel">
+<h2>Indicadores</h2>
+<div id="indicadores"></div>
 </div>
 
 <script>
-let db=JSON.parse(localStorage.getItem("vale11")||'{"projetos":[],"finance":[],"cron":[]}');
+let db=JSON.parse(localStorage.getItem("vale14")||'{"projects":[],"finance":[]}');
 
-function save(){localStorage.setItem("vale11",JSON.stringify(db));render();}
+function save(){localStorage.setItem("vale14",JSON.stringify(db));render();}
 
 function addProjeto(){
-db.projetos.push({nome:projNome.value,data:projData.value});
+db.projects.push({nome:nome.value,data:data.value,valor:parseFloat(valor.value||0)});
 save();
 }
 
 function addFinance(){
-db.finance.push({proj:finProj.value,valor:finValor.value,tipo:finTipo.value});
+db.finance.push({proj:fProj.value,valor:parseFloat(fValor.value||0),tipo:fTipo.value});
 save();
 }
 
-function addCron(){
-db.cron.push({proj:cronProj.value,desc:cronDesc.value,data:cronData.value});
-save();
+function lucro(proj){
+let entradas=db.finance.filter(f=>f.proj===proj && f.tipo==="Entrada").reduce((a,b)=>a+b.valor,0);
+let saidas=db.finance.filter(f=>f.proj===proj && f.tipo==="Saída").reduce((a,b)=>a+b.valor,0);
+return entradas-saidas;
 }
 
 function render(){
-listaProjetos.innerHTML=db.projetos.map(p=>`<div>${p.nome} - ${p.data}</div>`).join("");
-listaFinance.innerHTML=db.finance.map(f=>`<div>${f.proj} - ${f.tipo} R$${f.valor}</div>`).join("");
-listaCron.innerHTML=db.cron.map(c=>`<div>${c.proj} - ${c.desc} - ${c.data}</div>`).join("");
+projetos.innerHTML=db.projects.map(p=>`<div class="card">${p.nome} - lucro R$${lucro(p.nome)}</div>`).join("");
+
+finance.innerHTML=db.finance.map(f=>`<div class="card">${f.proj} - ${f.tipo} R$${f.valor}</div>`).join("");
+
+let total=db.projects.length;
+let lucroTotal=db.projects.reduce((a,p)=>a+lucro(p.nome),0);
+
+indicadores.innerHTML=`
+<div class="card">Projetos: ${total}</div>
+<div class="card">Lucro total: R$${lucroTotal}</div>
+`;
 }
 
 render();

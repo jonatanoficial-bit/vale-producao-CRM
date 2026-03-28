@@ -1,6 +1,8 @@
-Fase 10
-Versão v10.0.0
-Build 2026-03-28 15:59:34
+Fase 14 - Negócio
 
-- Controle financeiro
-- Controle de entregas
+Versão: v14.0.0
+Build: 2026-03-28 16:06:52
+
+- lucro por projeto
+- visão financeira total
+- base para decisões estratégicas
