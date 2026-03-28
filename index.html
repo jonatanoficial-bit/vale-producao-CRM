@@ -1,301 +1,180 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vale Produção | Central Operacional</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vale Produção Fase 8</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <img src="assets/logo.svg" alt="Vale Produção" class="logo" />
-        <div>
-          <h1>Vale Produção</h1>
-          <p>Central Operacional</p>
-        </div>
-      </div>
-
-      <nav class="menu">
-        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
-        <button class="nav-btn" data-view="projetos">Projetos</button>
-        <button class="nav-btn" data-view="calendario">Agenda</button>
-        <button class="nav-btn" data-view="relatorios">Relatórios</button>
-        <button class="nav-btn" data-view="integracoes">Integrações</button>
-      </nav>
-
-      <div class="build-box">
-        <strong>Build</strong>
-        <span>v5.0.0</span>
-        <span>2026-03-27 15:24:43</span>
-      </div>
-    </aside>
-
-    <main class="content">
-      <header class="topbar">
-        <div>
-          <h2 id="pageTitle">Dashboard</h2>
-          <p class="subtitle">Sistema gratuito, estático e pronto para publicar no GitHub Pages.</p>
-        </div>
-        <div class="actions">
-          <button id="btnSeed" class="secondary">Carregar exemplo</button>
-          <button id="btnExportJson" class="secondary">Exportar JSON</button>
-          <button id="btnExportCsv" class="secondary">Exportar CSV</button>
-        </div>
-      </header>
-
-      <section id="view-dashboard" class="view active">
-        <div class="cards-grid">
-          <article class="metric-card">
-            <span>Total de projetos</span>
-            <strong id="metricProjetos">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Em risco</span>
-            <strong id="metricRisco">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Atrasados</span>
-            <strong id="metricAtrasado">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Prontos</span>
-            <strong id="metricPronto">0</strong>
-          </article>
-        </div>
-
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Alertas operacionais</h3>
-            </div>
-            <div id="alertasList" class="stack-list"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Próximos lançamentos</h3>
-            </div>
-            <div id="proximosList" class="stack-list"></div>
-          </section>
-        </div>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Pipeline geral</h3>
-          </div>
-          <div id="pipelineResumo" class="pipeline-grid"></div>
-        </section>
-      </section>
-
-      <section id="view-projetos" class="view">
-        <div class="panel">
-          <div class="panel-header">
-            <h3>Novo projeto</h3>
-          </div>
-
-          <form id="projetoForm" class="form-grid">
-            <label>
-              Artista / Banda
-              <input type="text" id="artista" required placeholder="Ex.: Juh Silva" />
-            </label>
-            <label>
-              Título do projeto
-              <input type="text" id="titulo" required placeholder="Ex.: Bloqueado" />
-            </label>
-            <label>
-              Tipo
-              <select id="tipo">
-                <option>Single</option>
-                <option>EP</option>
-                <option>Álbum</option>
-              </select>
-            </label>
-            <label>
-              Data de lançamento
-              <input type="date" id="lancamento" required />
-            </label>
-            <label>
-              Link formulário inicial
-              <input type="url" id="formInicial" placeholder="https://..." />
-            </label>
-            <label>
-              Link formulário contratual
-              <input type="url" id="formContrato" placeholder="https://..." />
-            </label>
-            <label class="full">
-              Observações
-              <textarea id="observacoes" rows="3" placeholder="Anotações estratégicas do projeto"></textarea>
-            </label>
-
-            <fieldset class="full checklist-box">
-              <legend>Checklist obrigatório de lançamento</legend>
-              <label><input type="checkbox" id="ckAudio" /> Áudio final aprovado</label>
-              <label><input type="checkbox" id="ckCapa" /> Capa / identidade visual aprovada</label>
-              <label><input type="checkbox" id="ckRelease" /> Release finalizado</label>
-              <label><input type="checkbox" id="ckPosts" /> Cronograma de posts criado</label>
-              <label><input type="checkbox" id="ckDistribuicao" /> Distribuição enviada</label>
-            </fieldset>
-
-            <div class="full form-actions">
-              <button type="submit">Salvar projeto</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel">
-          <div class="panel-header">
-            <h3>Projetos cadastrados</h3>
-            <input type="search" id="buscaProjetos" placeholder="Buscar artista ou projeto" />
-          </div>
-          <div id="projetosList" class="project-list"></div>
-        </div>
-      </section>
-
-      <section id="view-calendario" class="view">
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Agenda crítica</h3>
-            </div>
-            <div id="agendaList" class="stack-list"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Gerar lembrete</h3>
-            </div>
-            <form id="lembreteForm" class="form-grid">
-              <label>
-                Projeto
-                <select id="lembreteProjeto"></select>
-              </label>
-              <label>
-                Título do lembrete
-                <input type="text" id="lembreteTitulo" placeholder="Ex.: Revisar data na ONErpm" />
-              </label>
-              <label>
-                Data
-                <input type="date" id="lembreteData" />
-              </label>
-              <label class="full">
-                Descrição
-                <textarea id="lembreteDescricao" rows="3" placeholder="Texto do alerta"></textarea>
-              </label>
-              <div class="full form-actions">
-                <button type="submit">Adicionar lembrete</button>
-              </div>
-            </form>
-          </section>
-        </div>
-      </section>
-
-      <section id="view-relatorios" class="view">
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Resumo operacional</h3>
-            </div>
-            <div id="relatorioResumo" class="report-box"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Projetos bloqueados</h3>
-            </div>
-            <div id="relatorioBloqueados" class="stack-list"></div>
-          </section>
-        </div>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Histórico de alterações</h3>
-          </div>
-          <div id="historicoList" class="stack-list"></div>
-        </section>
-      </section>
-
-      <section id="view-integracoes" class="view">
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Configurações</h3>
-            </div>
-
-            <form id="integracoesForm" class="form-grid">
-              <label class="full">
-                URL do Web App do Google Apps Script
-                <input type="url" id="appsScriptUrl" placeholder="Cole aqui a URL do deploy do Apps Script" />
-              </label>
-              <label class="full">
-                Link do Google Form inicial
-                <input type="url" id="cfgFormInicial" placeholder="https://..." />
-              </label>
-              <label class="full">
-                Link do Google Form contratual
-                <input type="url" id="cfgFormContrato" placeholder="https://..." />
-              </label>
-              <label class="full">
-                Link do calendário principal
-                <input type="url" id="cfgCalendario" placeholder="https://calendar.google.com/..." />
-              </label>
-              <div class="full form-actions">
-                <button type="submit">Salvar integrações</button>
-              </div>
-            </form>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h3>Ações rápidas</h3>
-            </div>
-            <div class="integration-actions">
-              <button id="btnAbrirFormInicial" class="secondary">Abrir formulário inicial</button>
-              <button id="btnAbrirFormContrato" class="secondary">Abrir formulário contratual</button>
-              <button id="btnAbrirCalendario" class="secondary">Abrir Google Calendar</button>
-              <button id="btnEnviarAppsScript">Enviar projetos ao Apps Script</button>
-            </div>
-            <p class="integration-note">
-              A automação real com Google depende da configuração do seu Apps Script. Nesta fase o site já vem preparado,
-              com documentação e arquivos completos dentro do ZIP.
-            </p>
-          </section>
-        </div>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Status das integrações</h3>
-          </div>
-          <div id="integracoesStatus" class="stack-list"></div>
-        </section>
-      </section>
-    </main>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <img src="assets/logo.svg" class="login-logo" alt="Logo">
+    <h1>Vale Produção</h1>
+    <p class="muted">Fase 8 - Login e Multiusuário</p>
+    <form id="loginForm" class="login-form">
+      <label>Perfil
+        <select id="loginRole">
+          <option value="admin">Administrador</option>
+          <option value="artist">Artista</option>
+        </select>
+      </label>
+      <label>Usuário<input id="loginUser" required></label>
+      <label>Senha<input id="loginPass" type="password" required></label>
+      <button type="submit">Entrar</button>
+    </form>
+    <div class="item">
+      <div class="item-title">Acesso inicial</div>
+      <div class="item-sub">Admin: admin / 1234</div>
+    </div>
+    <div class="build-box center"><strong>Build</strong><span>v8.0.0</span><span>2026-03-28 15:02:56</span></div>
   </div>
+</div>
 
-  <template id="projectCardTemplate">
-    <article class="project-card">
-      <div class="project-top">
-        <div>
-          <h4 class="project-title"></h4>
-          <p class="project-meta"></p>
-        </div>
-        <span class="status-badge"></span>
+<div id="appShell" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/logo.svg" class="logo" alt="Logo">
+      <div>
+        <h1>Vale Produção</h1>
+        <p id="sessionInfo"></p>
       </div>
+    </div>
+    <nav id="navMenu" class="nav"></nav>
+    <div class="build-box"><strong>Build</strong><span>v8.0.0</span><span>2026-03-28 15:02:56</span></div>
+    <button id="logoutBtn" class="danger full-btn">Sair</button>
+  </aside>
 
-      <div class="project-dates"></div>
-
-      <div class="mini-grid"></div>
-
-      <div class="project-actions">
-        <button class="secondary btn-remarcar">Remarcar</button>
-        <button class="secondary btn-historico">Registrar evento</button>
-        <button class="secondary btn-calendar">Google Calendar</button>
-        <button class="danger btn-excluir">Excluir</button>
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h2 id="pageTitle">Dashboard</h2>
+        <p class="subtitle">Portal do artista, multiusuário e contratos.</p>
       </div>
-    </article>
-  </template>
+    </header>
 
-  <script src="app.js"></script>
+    <section id="view-dashboard" class="view active"></section>
+
+    <section id="view-projetos" class="view">
+      <div class="panel-grid">
+        <section class="panel" id="projectFormPanel">
+          <div class="panel-header"><h3>Novo projeto</h3></div>
+          <form id="projectForm" class="form-grid">
+            <label>Artista / Banda<input id="artista" required></label>
+            <label>Título<input id="titulo" required></label>
+            <label>Tipo
+              <select id="tipo"><option>Single</option><option>EP</option><option>Álbum</option></select>
+            </label>
+            <label>Data de lançamento<input id="lancamento" type="date" required></label>
+            <label>Status do contrato
+              <select id="contratoStatus"><option>Pendente</option><option>Enviado</option><option>Assinado</option></select>
+            </label>
+            <label>Link do contrato<input id="contratoLink" type="url" placeholder="https://..."></label>
+            <label class="full">Observações<textarea id="observacoes" rows="3"></textarea></label>
+            <fieldset class="full">
+              <legend>Pipeline obrigatório</legend>
+              <div class="checkbox-grid">
+                <label><input type="checkbox" id="stEntrada"> Entrada</label>
+                <label><input type="checkbox" id="stContrato"> Contrato</label>
+                <label><input type="checkbox" id="stPre"> Pré-produção</label>
+                <label><input type="checkbox" id="stGravacao"> Gravação</label>
+                <label><input type="checkbox" id="stMix"> Mix / Master</label>
+                <label><input type="checkbox" id="stArte"> Arte</label>
+                <label><input type="checkbox" id="stRelease"> Release</label>
+                <label><input type="checkbox" id="stPosts"> Posts</label>
+                <label><input type="checkbox" id="stDistribuicao"> Distribuição</label>
+                <label><input type="checkbox" id="stRevisao"> Revisão final</label>
+              </div>
+            </fieldset>
+            <div class="full form-actions"><button type="submit">Salvar projeto</button></div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h3>Projetos</h3><input id="buscaProjetos" type="search" placeholder="Buscar..."></div>
+          <div id="projectList" class="project-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-artistas" class="view">
+      <div class="panel-grid">
+        <section class="panel">
+          <div class="panel-header"><h3>Novo acesso de artista</h3></div>
+          <form id="artistForm" class="form-grid">
+            <label>Nome do artista<input id="artistName" required></label>
+            <label>Usuário<input id="artistUser" required></label>
+            <label>Senha<input id="artistPass" required></label>
+            <label class="full">Observações<textarea id="artistObs" rows="3"></textarea></label>
+            <div class="full form-actions"><button type="submit">Salvar acesso</button></div>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-header"><h3>Artistas cadastrados</h3></div>
+          <div id="artistList" class="stack-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-contratos" class="view">
+      <div class="panel-grid">
+        <section class="panel"><div class="panel-header"><h3>Resumo de contratos</h3></div><div id="contractSummary" class="stack-list"></div></section>
+        <section class="panel"><div class="panel-header"><h3>Projetos por contrato</h3></div><div id="contractProjects" class="stack-list"></div></section>
+      </div>
+    </section>
+
+    <section id="view-portal" class="view">
+      <div class="panel"><div class="panel-header"><h3>Portal do artista</h3></div><div id="portalList" class="stack-list"></div></div>
+    </section>
+
+    <section id="view-integracoes" class="view">
+      <div class="panel-grid">
+        <section class="panel">
+          <div class="panel-header"><h3>Integrações</h3></div>
+          <form id="settingsForm" class="form-grid">
+            <label class="full">URL Apps Script<input id="cfgApps" type="url"></label>
+            <label class="full">Google Form inicial<input id="cfgInicial" type="url"></label>
+            <label class="full">Google Form contratual<input id="cfgContrato" type="url"></label>
+            <label class="full">Google Calendar<input id="cfgCalendar" type="url"></label>
+            <div class="full form-actions"><button type="submit">Salvar integrações</button></div>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-header"><h3>Ações rápidas</h3></div>
+          <div class="action-grid">
+            <button id="btnExportJson" class="secondary">Exportar JSON</button>
+            <button id="btnExportCsv" class="secondary">Exportar CSV</button>
+            <button id="btnSeed" class="secondary">Carregar exemplo</button>
+            <button id="btnSendApps">Enviar ao Apps Script</button>
+          </div>
+          <p class="note">Login local no navegador, sem custo e sem backend externo.</p>
+        </section>
+      </div>
+      <section class="panel"><div class="panel-header"><h3>Status das integrações</h3></div><div id="settingsStatus" class="stack-list"></div></section>
+    </section>
+  </main>
+</div>
+
+<template id="projectTemplate">
+  <article class="project-card">
+    <div class="project-top">
+      <div><h4 class="p-title"></h4><p class="p-meta"></p></div>
+      <span class="badge"></span>
+    </div>
+    <div class="p-dates"></div>
+    <div class="mini-grid"></div>
+    <div class="project-actions">
+      <button class="secondary btn-remarcar">Remarcar</button>
+      <button class="secondary btn-evento">Registrar evento</button>
+      <button class="secondary btn-contrato">Contrato</button>
+      <button class="secondary btn-calendar">Calendar</button>
+      <button class="btn-lancar">Confirmar lançamento</button>
+      <button class="danger btn-excluir">Excluir</button>
+    </div>
+    <div class="history-box"></div>
+  </article>
+</template>
+
+<script src="app.js"></script>
 </body>
 </html>

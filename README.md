@@ -1,26 +1,22 @@
-# Vale Produção - Artist Flow - Fase 5
+# Vale Produção - Artist Flow - Fase 8
 
-Versão: **v5.0.0**  
-Build: **2026-03-27 15:24:43**
+Versão: **v8.0.0**  
+Build: **2026-03-28 15:02:56**
 
-## O que esta fase entrega
+## Entregas desta fase
 - ZIP completo pronto para GitHub Pages
-- Dashboard operacional
-- Cadastro de projetos
-- Checklist obrigatório de lançamento
-- Alertas de risco e atraso
-- Histórico de alterações
-- Agenda crítica e lembretes
-- Exportação JSON e CSV
-- Área de integrações
-- Arquivos completos de Apps Script para configuração com Google
+- login local por perfil
+- multiusuário local
+- painel do administrador
+- portal do artista com visualização restrita
+- módulo inicial de contratos
+- prioridade operacional e gargalos
+- exportação JSON e CSV
+- integração preparada para Apps Script
 
-## Publicação
-1. Extraia este ZIP
-2. Envie todos os arquivos para um repositório no GitHub
-3. Ative GitHub Pages apontando para a branch principal
-4. O arquivo inicial é `index.html`
+## Acessos iniciais
+- Admin: `admin` / `1234`
+- Artista: criar no painel do administrador
 
-## Aviso importante
-A integração automática com Google Calendar, Forms e envio ao Apps Script depende da sua configuração manual.
-Nesta fase, toda a base visual e estrutural está pronta e os arquivos necessários estão incluídos no pacote.
+## Observação
+Tudo continua 100% local no navegador e gratuito.

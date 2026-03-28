@@ -1,548 +1,120 @@
 
-const STORAGE_KEY = 'vale-producao-fase5';
-const SETTINGS_KEY = 'vale-producao-integracoes-fase5';
+const STORAGE='vale-producao-fase8', SETTINGS='vale-producao-settings-fase8', SESSION='vale-producao-session-fase8';
+const defaultState={users:[{id:'u-admin',role:'admin',name:'Administrador',username:'admin',password:'1234',notes:'Acesso padrão'}],projects:[]};
+const defaultSettings={apps:'',inicial:'',contrato:'',calendar:''};
+let state=loadJson(STORAGE,defaultState), settings=loadJson(SETTINGS,defaultSettings), session=loadJson(SESSION,null);
 
-const initialState = {
-  projetos: [],
-  lembretes: []
-};
+function loadJson(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):structuredClone(f);}catch{return structuredClone(f);}}
+function saveState(){localStorage.setItem(STORAGE,JSON.stringify(state));renderAll();}
+function saveSettings(){localStorage.setItem(SETTINGS,JSON.stringify(settings));renderSettings();}
+function saveSession(){if(session)localStorage.setItem(SESSION,JSON.stringify(session));else localStorage.removeItem(SESSION);updateShellVisibility();}
+function uid(){return 'id-'+Math.random().toString(36).slice(2,10);}
+function byId(id){return document.getElementById(id);}
+function itemHtml(t,s){return `<div class="item"><div class="item-title">${t}</div><div class="item-sub">${s}</div></div>`;}
+function formatDate(v){if(!v)return 'Sem data';const p=v.split('-');return `${p[2]}/${p[1]}/${p[0]}`;}
+function diffDays(v){if(!v)return 9999;const t=new Date();t.setHours(0,0,0,0);const d=new Date(v+'T00:00:00');return Math.round((d-t)/86400000);}
+function addHistory(p,a){p.history.unshift({id:uid(),action:a,ts:new Date().toISOString()});}
+function pipelineComplete(p){return Object.values(p.pipeline).every(Boolean);}
+function getStatus(p){const d=diffDays(p.lancamento);if(d<0)return 'ATRASADO';if(d<=7&&!pipelineComplete(p))return 'EM RISCO';if(pipelineComplete(p))return 'PRONTO';return 'EM PRODUÇÃO';}
+function badgeClass(s){if(s==='PRONTO')return 'badge-pronto';if(s==='EM RISCO')return 'badge-risco';if(s==='ATRASADO')return 'badge-atrasado';return 'badge-producao';}
+function priorityScore(p){const d=diffDays(p.lancamento);let s=0;if(getStatus(p)==='ATRASADO')s+=100;if(getStatus(p)==='EM RISCO')s+=60;if(p.contract.status!=='Assinado')s+=12;if(!pipelineComplete(p))s+=25;s+=Math.max(0,30-Math.max(d,0));return s;}
+function getCurrentUser(){return session?state.users.find(u=>u.id===session.userId)||null:null;}
+function getVisibleProjects(){const u=getCurrentUser();if(!u)return[];return u.role==='admin'?state.projects:state.projects.filter(p=>p.artistUserId===u.id);}
+function calendarUrl(p){const start=(p.lancamento||'').replaceAll('-','');const endDate=new Date((p.lancamento||'')+'T00:00:00');endDate.setDate(endDate.getDate()+1);const end=endDate.toISOString().slice(0,10).replaceAll('-','');const text=encodeURIComponent(`Lançamento - ${p.artista} | ${p.titulo}`);const details=encodeURIComponent(`Projeto: ${p.titulo}\nArtista: ${p.artista}\nContrato: ${p.contract.status}\nStatus: ${getStatus(p)}`);return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}&details=${details}`;}
 
-const defaultSettings = {
-  appsScriptUrl: '',
-  formInicial: '',
-  formContrato: '',
-  calendario: ''
-};
-
-let state = loadState();
-let settings = loadSettings();
-
-function loadState(){
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(initialState);
-  } catch {
-    return structuredClone(initialState);
+function updateShellVisibility(){
+  const logged=!!getCurrentUser();
+  byId('loginScreen').classList.toggle('hidden',logged);
+  byId('appShell').classList.toggle('hidden',!logged);
+  if(logged){
+    const u=getCurrentUser();
+    byId('sessionInfo').textContent=`${u.role==='admin'?'Admin':'Artista'} · ${u.name}`;
+    buildNav(); renderAll();
   }
 }
-
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  renderAll();
+function buildNav(){
+  const u=getCurrentUser(), nav=byId('navMenu');
+  const items=u.role==='admin'?[['dashboard','Dashboard'],['projetos','Projetos'],['artistas','Artistas'],['contratos','Contratos'],['portal','Portal'],['integracoes','Integrações']]:[['dashboard','Dashboard'],['portal','Meu Portal']];
+  nav.innerHTML=items.map((it,i)=>`<button class="nav-btn ${i===0?'active':''}" data-view="${it[0]}">${it[1]}</button>`).join('');
+  document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');showView(btn.dataset.view);});
+  showView(items[0][0]);
 }
-
-function loadSettings(){
-  try {
-    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || structuredClone(defaultSettings);
-  } catch {
-    return structuredClone(defaultSettings);
-  }
-}
-
-function saveSettings(){
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  renderIntegrationStatus();
-}
-
-function uid(){
-  return 'id-' + Math.random().toString(36).slice(2, 11);
-}
-
-function formatDate(dateString){
-  if(!dateString) return 'Sem data';
-  const [y,m,d] = dateString.split('-');
-  return `${d}/${m}/${y}`;
-}
-
-function diffDays(dateString){
-  if(!dateString) return 9999;
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const target = new Date(dateString + 'T00:00:00');
-  return Math.round((target - today) / (1000*60*60*24));
-}
-
-function getProjectStatus(project){
-  const days = diffDays(project.lancamento);
-  const ck = project.checklist;
-  const checklistDone = Object.values(ck).every(Boolean);
-
-  if(days < 0) return 'ATRASADO';
-  if(days <= 7 && !checklistDone) return 'EM RISCO';
-  if(checklistDone) return 'PRONTO';
-  return 'EM PRODUÇÃO';
-}
-
-function getStatusClass(status){
-  if(status === 'PRONTO') return 'status-pronto';
-  if(status === 'EM RISCO') return 'status-risco';
-  if(status === 'ATRASADO') return 'status-atrasado';
-  return 'status-producao';
-}
-
-function addHistory(project, action){
-  project.historico.unshift({
-    id: uid(),
-    action,
-    timestamp: new Date().toISOString()
-  });
-}
-
-function projectToCsvRow(project){
-  const ck = project.checklist;
-  const fields = [
-    project.artista,
-    project.titulo,
-    project.tipo,
-    project.lancamento,
-    getProjectStatus(project),
-    ck.audio,
-    ck.capa,
-    ck.release,
-    ck.posts,
-    ck.distribuicao,
-    (project.observacoes || '').replaceAll('\n',' ')
-  ];
-  return fields.map(v => `"${String(v).replaceAll('"','""')}"`).join(',');
-}
-
-function exportJson(){
-  const blob = new Blob([JSON.stringify({version:'v5.0.0', exportedAt: new Date().toISOString(), ...state}, null, 2)], {type:'application/json'});
-  downloadBlob(blob, `vale-producao-export-${new Date().toISOString().slice(0,10)}.json`);
-}
-
-function exportCsv(){
-  const header = 'artista,titulo,tipo,lancamento,status,audio,capa,release,posts,distribuicao,observacoes';
-  const rows = state.projetos.map(projectToCsvRow);
-  const blob = new Blob([[header, ...rows].join('\n')], {type:'text/csv;charset=utf-8;'});
-  downloadBlob(blob, `vale-producao-relatorio-${new Date().toISOString().slice(0,10)}.csv`);
-}
-
-function downloadBlob(blob, filename){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function generateCalendarUrl(project){
-  const start = (project.lancamento || '').replaceAll('-', '');
-  const endDate = new Date((project.lancamento || '') + 'T00:00:00');
-  endDate.setDate(endDate.getDate() + 1);
-  const end = endDate.toISOString().slice(0,10).replaceAll('-', '');
-  const text = encodeURIComponent(`Lançamento - ${project.artista} | ${project.titulo}`);
-  const details = encodeURIComponent(`Projeto: ${project.titulo}\nArtista: ${project.artista}\nStatus atual: ${getProjectStatus(project)}\nObservações: ${project.observacoes || ''}`);
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}&details=${details}`;
-}
-
-function renderNav(){
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('view-' + btn.dataset.view).classList.add('active');
-      document.getElementById('pageTitle').textContent = btn.textContent;
-    };
-  });
-}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));byId('view-'+id).classList.add('active');byId('pageTitle').textContent=document.querySelector(`.nav-btn[data-view="${id}"]`)?.textContent||'Painel';}
 
 function renderDashboard(){
-  const projetos = state.projetos;
-  const statuses = projetos.map(getProjectStatus);
-
-  byId('metricProjetos').textContent = projetos.length;
-  byId('metricRisco').textContent = statuses.filter(s => s === 'EM RISCO').length;
-  byId('metricAtrasado').textContent = statuses.filter(s => s === 'ATRASADO').length;
-  byId('metricPronto').textContent = statuses.filter(s => s === 'PRONTO').length;
-
-  const alertas = [];
-  projetos.forEach(project => {
-    const status = getProjectStatus(project);
-    const days = diffDays(project.lancamento);
-
-    if(status === 'EM RISCO'){
-      alertas.push({title: `${project.artista} - ${project.titulo}`, sub: `Lançamento em ${days} dia(s) com pendências obrigatórias.`});
-    }
-    if(status === 'ATRASADO'){
-      alertas.push({title: `${project.artista} - ${project.titulo}`, sub: `A data de lançamento já passou e o projeto exige revisão imediata.`});
-    }
-  });
-
-  renderSimpleList('alertasList', alertas.length ? alertas : [{title:'Nenhum alerta crítico agora', sub:'Os projetos estão sob controle.'}], 'alert-item');
-
-  const proximos = [...projetos]
-    .sort((a,b) => (a.lancamento || '').localeCompare(b.lancamento || ''))
-    .slice(0, 6)
-    .map(project => ({
-      title: `${formatDate(project.lancamento)} · ${project.artista}`,
-      sub: `${project.titulo} · ${getProjectStatus(project)}`
-    }));
-
-  renderSimpleList('proximosList', proximos.length ? proximos : [{title:'Nenhum projeto cadastrado', sub:'Crie o primeiro projeto para ver a agenda crítica.'}], 'item');
-
-  const pipeline = [
-    {label:'Briefing / Entrada', value: projetos.filter(p => p.formInicial).length},
-    {label:'Contrato / Dados', value: projetos.filter(p => p.formContrato).length},
-    {label:'Produção / Captação', value: projetos.filter(p => !p.checklist.audio).length},
-    {label:'Prontos para lançar', value: projetos.filter(p => getProjectStatus(p) === 'PRONTO').length}
-  ];
-
-  const pipelineBox = byId('pipelineResumo');
-  pipelineBox.innerHTML = '';
-  pipeline.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'pipeline-item';
-    div.innerHTML = `<span>${item.label}</span><strong>${item.value}</strong>`;
-    pipelineBox.appendChild(div);
-  });
+  const projects=getVisibleProjects(), dashboard=byId('view-dashboard');
+  const total=projects.length, prontos=projects.filter(p=>getStatus(p)==='PRONTO').length, risco=projects.filter(p=>getStatus(p)==='EM RISCO').length, atrasado=projects.filter(p=>getStatus(p)==='ATRASADO').length;
+  const tops=[...projects].sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,6);
+  dashboard.innerHTML=`<div class="cards-grid">
+  <article class="metric-card"><span>Total</span><strong>${total}</strong></article>
+  <article class="metric-card"><span>Prontos</span><strong>${prontos}</strong></article>
+  <article class="metric-card"><span>Em risco</span><strong>${risco}</strong></article>
+  <article class="metric-card"><span>Atrasados</span><strong>${atrasado}</strong></article></div>
+  <div class="panel-grid">
+    <section class="panel"><div class="panel-header"><h3>Prioridade operacional</h3></div><div class="stack-list">${tops.length?tops.map(p=>itemHtml(`${p.artista} — ${p.titulo}`,`Prioridade ${priorityScore(p)} · ${getStatus(p)} · lançamento ${formatDate(p.lancamento)}`)).join(''):itemHtml('Sem projetos','Cadastre projetos para iniciar.')}</div></section>
+    <section class="panel"><div class="panel-header"><h3>Gargalos identificados</h3></div><div class="stack-list">
+      ${itemHtml('Contratos pendentes',`${projects.filter(p=>p.contract.status!=='Assinado').length} projeto(s)`)}
+      ${itemHtml('Arte pendente',`${projects.filter(p=>!p.pipeline.arte).length} projeto(s)`)}
+      ${itemHtml('Distribuição pendente',`${projects.filter(p=>!p.pipeline.distribuicao).length} projeto(s)`)}
+      ${itemHtml('Revisão final pendente',`${projects.filter(p=>!p.pipeline.revisao).length} projeto(s)`)}
+    </div></section>
+  </div>`;
 }
-
 function renderProjects(){
-  const list = byId('projetosList');
-  list.innerHTML = '';
-  const query = byId('buscaProjetos').value.trim().toLowerCase();
-  const template = byId('projectCardTemplate');
-
-  const filtered = state.projetos.filter(project => {
-    const target = `${project.artista} ${project.titulo}`.toLowerCase();
-    return target.includes(query);
-  });
-
-  if(!filtered.length){
-    list.innerHTML = '<div class="item"><div class="item-title">Nenhum projeto encontrado</div><div class="item-sub">Cadastre um projeto ou ajuste sua busca.</div></div>';
-    return;
-  }
-
-  filtered
-    .sort((a,b) => (a.lancamento || '').localeCompare(b.lancamento || ''))
-    .forEach(project => {
-      const node = template.content.firstElementChild.cloneNode(true);
-      const status = getProjectStatus(project);
-      node.querySelector('.project-title').textContent = `${project.artista} — ${project.titulo}`;
-      node.querySelector('.project-meta').textContent = `${project.tipo} · ${project.id}`;
-      const badge = node.querySelector('.status-badge');
-      badge.textContent = status;
-      badge.classList.add(getStatusClass(status));
-      node.querySelector('.project-dates').innerHTML = `
-        Lançamento: <strong>${formatDate(project.lancamento)}</strong><br>
-        Form inicial: ${project.formInicial ? 'configurado' : 'não informado'} ·
-        Form contrato: ${project.formContrato ? 'configurado' : 'não informado'}
-      `;
-
-      const miniGrid = node.querySelector('.mini-grid');
-      const miniItems = [
-        ['Áudio', project.checklist.audio],
-        ['Capa', project.checklist.capa],
-        ['Release', project.checklist.release],
-        ['Posts', project.checklist.posts],
-        ['Distribuição', project.checklist.distribuicao]
-      ];
-      miniGrid.innerHTML = miniItems.map(([label, ok]) => `
-        <div class="mini-box">${label}<strong>${ok ? 'OK' : 'Pendente'}</strong></div>
-      `).join('');
-
-      node.querySelector('.btn-remarcar').onclick = () => remarcaProjeto(project.id);
-      node.querySelector('.btn-historico').onclick = () => registrarEventoManual(project.id);
-      node.querySelector('.btn-calendar').onclick = () => window.open(generateCalendarUrl(project), '_blank');
-      node.querySelector('.btn-excluir').onclick = () => excluirProjeto(project.id);
-
-      list.appendChild(node);
-    });
-
-  renderProjectSelect();
-}
-
-function renderAgenda(){
-  const agenda = [];
-  state.projetos.forEach(project => {
-    agenda.push({
-      title: `${formatDate(project.lancamento)} · Lançamento`,
-      sub: `${project.artista} — ${project.titulo}`
-    });
-
-    const days = diffDays(project.lancamento);
-    if(days <= 15){
-      agenda.push({
-        title: `Revisão crítica`,
-        sub: `${project.artista} — ${project.titulo} · faltam ${days} dia(s)`
-      });
+  const u=getCurrentUser();
+  byId('projectFormPanel').style.display=u.role==='admin'?'':'none';
+  const list=byId('projectList'), q=(byId('buscaProjetos').value||'').trim().toLowerCase();
+  const template=byId('projectTemplate'); list.innerHTML='';
+  const projects=[...getVisibleProjects()].filter(p=>`${p.artista} ${p.titulo}`.toLowerCase().includes(q)).sort((a,b)=>priorityScore(b)-priorityScore(a));
+  if(!projects.length){list.innerHTML=itemHtml('Nenhum projeto encontrado','Cadastre um projeto ou ajuste a busca.'); return;}
+  projects.forEach(project=>{
+    const node=template.content.firstElementChild.cloneNode(true), status=getStatus(project);
+    node.querySelector('.p-title').textContent=`${project.artista} — ${project.titulo}`;
+    node.querySelector('.p-meta').textContent=`${project.tipo} · contrato ${project.contract.status} · prioridade ${priorityScore(project)}`;
+    const badge=node.querySelector('.badge'); badge.textContent=status; badge.classList.add(badgeClass(status));
+    node.querySelector('.p-dates').innerHTML=`Lançamento: <strong>${formatDate(project.lancamento)}</strong><br>Contrato: ${project.contract.status}${project.contract.link?' · link disponível':' · sem link'}`;
+    node.querySelector('.mini-grid').innerHTML=[['Entrada',project.pipeline.entrada],['Contrato',project.pipeline.contrato],['Mix',project.pipeline.mix],['Arte',project.pipeline.arte],['Distribuição',project.pipeline.distribuicao]].map(it=>`<div class="mini-box">${it[0]}<strong>${it[1]?'OK':'Pendente'}</strong></div>`).join('');
+    const admin=u.role==='admin';
+    const br=node.querySelector('.btn-remarcar'), be=node.querySelector('.btn-evento'), bx=node.querySelector('.btn-excluir'), bc=node.querySelector('.btn-contrato'), bcal=node.querySelector('.btn-calendar'), bl=node.querySelector('.btn-lancar');
+    if(!admin){br.style.display='none';be.style.display='none';bx.style.display='none';bl.style.display='none';}
+    else {
+      br.onclick=()=>remarca(project.id); be.onclick=()=>registrarEvento(project.id); bx.onclick=()=>excluirProjeto(project.id);
+      if(!pipelineComplete(project)){bl.textContent='Lançamento bloqueado'; bl.disabled=true;} else {bl.onclick=()=>confirmarLancamento(project.id);}
     }
-  });
-
-  state.lembretes.forEach(item => {
-    const projeto = state.projetos.find(p => p.id === item.projectId);
-    agenda.push({
-      title: `${formatDate(item.data)} · ${item.titulo}`,
-      sub: `${projeto ? projeto.artista + ' — ' + projeto.titulo : 'Projeto removido'}`
-    });
-  });
-
-  agenda.sort((a,b) => a.title.localeCompare(b.title));
-  renderSimpleList('agendaList', agenda.length ? agenda : [{title:'Agenda vazia', sub:'Adicione projetos ou lembretes.'}], 'agenda-item');
-}
-
-function renderReports(){
-  const projetos = state.projetos;
-  const resumo = `
-    <strong>Total de projetos:</strong> ${projetos.length}<br>
-    <strong>Em produção:</strong> ${projetos.filter(p => getProjectStatus(p) === 'EM PRODUÇÃO').length}<br>
-    <strong>Prontos:</strong> ${projetos.filter(p => getProjectStatus(p) === 'PRONTO').length}<br>
-    <strong>Em risco:</strong> ${projetos.filter(p => getProjectStatus(p) === 'EM RISCO').length}<br>
-    <strong>Atrasados:</strong> ${projetos.filter(p => getProjectStatus(p) === 'ATRASADO').length}
-  `;
-  byId('relatorioResumo').innerHTML = resumo;
-
-  const bloqueados = projetos
-    .filter(p => !Object.values(p.checklist).every(Boolean))
-    .map(p => ({
-      title: `${p.artista} — ${p.titulo}`,
-      sub: `Bloqueado por checklist incompleto · status atual: ${getProjectStatus(p)}`
-    }));
-
-  renderSimpleList('relatorioBloqueados', bloqueados.length ? bloqueados : [{title:'Nenhum projeto bloqueado', sub:'Todos os checklists obrigatórios foram concluídos.'}], 'item');
-
-  const historico = [];
-  projetos.forEach(project => {
-    project.historico.forEach(h => {
-      historico.push({
-        title: `${project.artista} — ${project.titulo}`,
-        sub: `${new Date(h.timestamp).toLocaleString('pt-BR')} · ${h.action}`
-      });
-    });
-  });
-  historico.sort((a,b) => b.sub.localeCompare(a.sub));
-
-  renderSimpleList('historicoList', historico.length ? historico : [{title:'Sem histórico', sub:'As alterações aparecerão aqui.'}], 'history-item');
-}
-
-function renderIntegrationStatus(){
-  const statuses = [
-    {title:'Apps Script', sub: settings.appsScriptUrl ? 'Configurado' : 'Pendente'},
-    {title:'Google Form inicial', sub: settings.formInicial ? 'Configurado' : 'Pendente'},
-    {title:'Google Form contratual', sub: settings.formContrato ? 'Configurado' : 'Pendente'},
-    {title:'Google Calendar', sub: settings.calendario ? 'Configurado' : 'Pendente'}
-  ];
-  renderSimpleList('integracoesStatus', statuses, 'status-item');
-
-  byId('appsScriptUrl').value = settings.appsScriptUrl || '';
-  byId('cfgFormInicial').value = settings.formInicial || '';
-  byId('cfgFormContrato').value = settings.formContrato || '';
-  byId('cfgCalendario').value = settings.calendario || '';
-}
-
-function renderSimpleList(targetId, items, className='item'){
-  const root = byId(targetId);
-  root.innerHTML = '';
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = className;
-    div.innerHTML = `<div class="item-title">${item.title}</div><div class="item-sub">${item.sub}</div>`;
-    root.appendChild(div);
+    bc.onclick=()=>project.contract.link?window.open(project.contract.link,'_blank'):alert('Sem link de contrato neste projeto.');
+    bcal.onclick=()=>window.open(calendarUrl(project),'_blank');
+    project.history.slice(0,4).forEach(h=>{const div=document.createElement('div'); div.className='history-row'; div.textContent=`${new Date(h.ts).toLocaleString('pt-BR')} · ${h.action}`; node.querySelector('.history-box').appendChild(div);});
+    list.appendChild(node);
   });
 }
+function renderArtists(){if(getCurrentUser().role!=='admin')return; const artists=state.users.filter(u=>u.role==='artist'); byId('artistList').innerHTML=artists.length?artists.map(a=>itemHtml(`${a.name} · usuário ${a.username}`,a.notes||'Sem observações')).join(''):itemHtml('Nenhum artista cadastrado','Crie acessos para liberar o portal.');}
+function renderContracts(){if(getCurrentUser().role!=='admin')return; const ps=state.projects; byId('contractSummary').innerHTML=[itemHtml('Pendentes',`${ps.filter(p=>p.contract.status==='Pendente').length} projeto(s)`),itemHtml('Enviados',`${ps.filter(p=>p.contract.status==='Enviado').length} projeto(s)`),itemHtml('Assinados',`${ps.filter(p=>p.contract.status==='Assinado').length} projeto(s)`)].join(''); byId('contractProjects').innerHTML=ps.length?ps.map(p=>itemHtml(`${p.artista} — ${p.titulo}`,`Contrato ${p.contract.status}${p.contract.link?' · link cadastrado':''}`)).join(''):itemHtml('Sem projetos','Os contratos aparecerão aqui.');}
+function renderPortal(){const ps=getVisibleProjects(); byId('portalList').innerHTML=ps.length?ps.map(p=>itemHtml(`${p.artista} — ${p.titulo}`,`Status ${getStatus(p)} · lançamento ${formatDate(p.lancamento)} · contrato ${p.contract.status}`)).join(''):itemHtml('Nenhum projeto disponível','Quando houver projetos vinculados, eles aparecerão aqui.');}
+function renderSettings(){if(getCurrentUser().role!=='admin')return; byId('cfgApps').value=settings.apps||''; byId('cfgInicial').value=settings.inicial||''; byId('cfgContrato').value=settings.contrato||''; byId('cfgCalendar').value=settings.calendar||''; byId('settingsStatus').innerHTML=[itemHtml('Apps Script',settings.apps?'Configurado':'Pendente'),itemHtml('Google Form inicial',settings.inicial?'Configurado':'Pendente'),itemHtml('Google Form contratual',settings.contrato?'Configurado':'Pendente'),itemHtml('Google Calendar',settings.calendar?'Configurado':'Pendente')].join('');}
+function renderAll(){const u=getCurrentUser(); if(!u)return; renderDashboard(); renderProjects(); renderArtists(); renderContracts(); renderPortal(); renderSettings();}
 
-function renderProjectSelect(){
-  const select = byId('lembreteProjeto');
-  const current = select.value;
-  select.innerHTML = state.projetos.map(project => `<option value="${project.id}">${project.artista} — ${project.titulo}</option>`).join('');
-  if(current) select.value = current;
-}
+function handleLogin(e){e.preventDefault(); const role=byId('loginRole').value, user=byId('loginUser').value.trim(), pass=byId('loginPass').value.trim(); const found=state.users.find(u=>u.role===role&&u.username===user&&u.password===pass); if(!found)return alert('Credenciais inválidas.'); session={userId:found.id}; saveSession();}
+function handleProjectSubmit(e){e.preventDefault(); const artistName=byId('artista').value.trim(); const artistUser=state.users.find(u=>u.role==='artist'&&u.name.toLowerCase()===artistName.toLowerCase()); const p={id:uid(),artistUserId:artistUser?artistUser.id:null,artista:artistName,titulo:byId('titulo').value.trim(),tipo:byId('tipo').value,lancamento:byId('lancamento').value,observacoes:byId('observacoes').value.trim(),contract:{status:byId('contratoStatus').value,link:byId('contratoLink').value.trim()},pipeline:{entrada:byId('stEntrada').checked,contrato:byId('stContrato').checked,pre:byId('stPre').checked,gravacao:byId('stGravacao').checked,mix:byId('stMix').checked,arte:byId('stArte').checked,release:byId('stRelease').checked,posts:byId('stPosts').checked,distribuicao:byId('stDistribuicao').checked,revisao:byId('stRevisao').checked},launched:false,history:[]}; addHistory(p,'Projeto criado'); state.projects.push(p); e.target.reset(); saveState();}
+function handleArtistSubmit(e){e.preventDefault(); const username=byId('artistUser').value.trim(); if(state.users.some(u=>u.username===username))return alert('Este usuário já existe.'); state.users.push({id:uid(),role:'artist',name:byId('artistName').value.trim(),username,password:byId('artistPass').value.trim(),notes:byId('artistObs').value.trim()}); e.target.reset(); saveState();}
+function handleSettingsSubmit(e){e.preventDefault(); settings.apps=byId('cfgApps').value.trim(); settings.inicial=byId('cfgInicial').value.trim(); settings.contrato=byId('cfgContrato').value.trim(); settings.calendar=byId('cfgCalendar').value.trim(); saveSettings(); alert('Integrações salvas localmente.');}
+function remarca(id){const p=state.projects.find(x=>x.id===id); if(!p)return; const nova=prompt('Nova data (AAAA-MM-DD):',p.lancamento); if(!nova||nova===p.lancamento)return; const motivo=prompt('Motivo da remarcação:'); if(!motivo)return alert('Informe o motivo.'); addHistory(p,`Remarcação de ${p.lancamento} para ${nova} · motivo: ${motivo}`); p.lancamento=nova; saveState();}
+function registrarEvento(id){const p=state.projects.find(x=>x.id===id); if(!p)return; const text=prompt('Descreva o evento:'); if(!text)return; addHistory(p,text); saveState();}
+function confirmarLancamento(id){const p=state.projects.find(x=>x.id===id); if(!p)return; if(!pipelineComplete(p))return alert('Lançamento bloqueado.'); if(!confirm(`Confirmar lançamento de ${p.artista} — ${p.titulo}?`))return; const phrase=prompt('Digite LANÇAR para concluir:'); if(phrase!=='LANÇAR')return alert('Confirmação cancelada.'); p.launched=true; addHistory(p,'Lançamento confirmado com dupla validação'); saveState();}
+function excluirProjeto(id){const p=state.projects.find(x=>x.id===id); if(!p)return; if(!confirm(`Excluir ${p.artista} — ${p.titulo}?`))return; state.projects=state.projects.filter(x=>x.id!==id); saveState();}
+function exportJson(){const blob=new Blob([JSON.stringify({version:'v8.0.0',exportedAt:new Date().toISOString(),state,settings},null,2)],{type:'application/json'}); download(blob,`vale-producao-fase8-${new Date().toISOString().slice(0,10)}.json`);}
+function exportCsv(){const header='artista,titulo,tipo,lancamento,status,contrato_status,entrada,contrato,pre,gravacao,mix,arte,release,posts,distribuicao,revisao\n'; const rows=state.projects.map(p=>[p.artista,p.titulo,p.tipo,p.lancamento,getStatus(p),p.contract.status,p.pipeline.entrada,p.pipeline.contrato,p.pipeline.pre,p.pipeline.gravacao,p.pipeline.mix,p.pipeline.arte,p.pipeline.release,p.pipeline.posts,p.pipeline.distribuicao,p.pipeline.revisao].map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n'); const blob=new Blob([header+rows],{type:'text/csv;charset=utf-8;'}); download(blob,`vale-producao-fase8-${new Date().toISOString().slice(0,10)}.csv`);}
+function download(blob,filename){const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+async function sendApps(){if(!settings.apps)return alert('Configure a URL do Apps Script.'); try{const res=await fetch(settings.apps,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'Vale Produção Fase 8',exportedAt:new Date().toISOString(),state,settings})}); if(!res.ok)throw new Error('Falha'); alert('Dados enviados com sucesso.');}catch{alert('Falha no envio. Verifique a URL e as permissões do Apps Script.');}}
+function seed(){if(state.projects.length&&!confirm('Isso adicionará exemplos ao que já existe. Continuar?'))return; let artist=state.users.find(u=>u.role==='artist'&&u.username==='juh'); if(!artist){artist={id:uid(),role:'artist',name:'Juh Silva',username:'juh',password:'1234',notes:'Exemplo de artista'}; state.users.push(artist);} const p1={id:uid(),artistUserId:artist.id,artista:'Juh Silva',titulo:'Bloqueado',tipo:'Single',lancamento:new Date(Date.now()+5*86400000).toISOString().slice(0,10),observacoes:'Reforçar reels e confirmar distribuição.',contract:{status:'Enviado',link:'https://autentique.com.br/exemplo'},pipeline:{entrada:true,contrato:true,pre:true,gravacao:true,mix:true,arte:false,release:true,posts:false,distribuicao:false,revisao:false},launched:false,history:[]}; const p2={id:uid(),artistUserId:null,artista:'Ariane Mazur',titulo:'Novo Amanhã',tipo:'Single',lancamento:new Date(Date.now()+15*86400000).toISOString().slice(0,10),observacoes:'Projeto praticamente pronto.',contract:{status:'Assinado',link:'https://autentique.com.br/exemplo2'},pipeline:{entrada:true,contrato:true,pre:true,gravacao:true,mix:true,arte:true,release:true,posts:true,distribuicao:true,revisao:true},launched:false,history:[]}; [p1,p2].forEach(p=>addHistory(p,'Projeto criado via dados de exemplo')); state.projects.push(p1,p2); saveState();}
 
-function renderAll(){
-  renderDashboard();
-  renderProjects();
-  renderAgenda();
-  renderReports();
-  renderIntegrationStatus();
-}
-
-function handleProjectSubmit(event){
-  event.preventDefault();
-  const project = {
-    id: uid(),
-    artista: byId('artista').value.trim(),
-    titulo: byId('titulo').value.trim(),
-    tipo: byId('tipo').value,
-    lancamento: byId('lancamento').value,
-    formInicial: byId('formInicial').value.trim(),
-    formContrato: byId('formContrato').value.trim(),
-    observacoes: byId('observacoes').value.trim(),
-    checklist: {
-      audio: byId('ckAudio').checked,
-      capa: byId('ckCapa').checked,
-      release: byId('ckRelease').checked,
-      posts: byId('ckPosts').checked,
-      distribuicao: byId('ckDistribuicao').checked
-    },
-    historico: []
-  };
-
-  addHistory(project, 'Projeto criado');
-  state.projetos.push(project);
-  event.target.reset();
-  saveState();
-}
-
-function handleReminderSubmit(event){
-  event.preventDefault();
-  if(!byId('lembreteProjeto').value) return alert('Cadastre um projeto antes de criar lembrete.');
-  state.lembretes.push({
-    id: uid(),
-    projectId: byId('lembreteProjeto').value,
-    titulo: byId('lembreteTitulo').value.trim(),
-    data: byId('lembreteData').value,
-    descricao: byId('lembreteDescricao').value.trim()
-  });
-  event.target.reset();
-  saveState();
-}
-
-function handleIntegrationsSubmit(event){
-  event.preventDefault();
-  settings.appsScriptUrl = byId('appsScriptUrl').value.trim();
-  settings.formInicial = byId('cfgFormInicial').value.trim();
-  settings.formContrato = byId('cfgFormContrato').value.trim();
-  settings.calendario = byId('cfgCalendario').value.trim();
-  saveSettings();
-  alert('Integrações salvas localmente neste navegador.');
-}
-
-function remarcaProjeto(projectId){
-  const project = state.projetos.find(p => p.id === projectId);
-  if(!project) return;
-  const current = project.lancamento || '';
-  const next = prompt('Nova data de lançamento (AAAA-MM-DD):', current);
-  if(!next || next === current) return;
-  addHistory(project, `Remarcação de ${current || 'sem data'} para ${next}`);
-  project.lancamento = next;
-  saveState();
-}
-
-function registrarEventoManual(projectId){
-  const project = state.projetos.find(p => p.id === projectId);
-  if(!project) return;
-  const action = prompt('Descreva o evento a registrar no histórico:');
-  if(!action) return;
-  addHistory(project, action);
-  saveState();
-}
-
-function excluirProjeto(projectId){
-  const project = state.projetos.find(p => p.id === projectId);
-  if(!project) return;
-  if(!confirm(`Excluir ${project.artista} — ${project.titulo}?`)) return;
-  state.projetos = state.projetos.filter(p => p.id !== projectId);
-  state.lembretes = state.lembretes.filter(l => l.projectId !== projectId);
-  saveState();
-}
-
-function seedExample(){
-  if(state.projetos.length && !confirm('Isso vai adicionar exemplos ao que já existe. Continuar?')) return;
-
-  const examples = [
-    {
-      id: uid(),
-      artista: 'Ariane Mazur',
-      titulo: 'Novo Amanhã',
-      tipo: 'Single',
-      lancamento: new Date(Date.now() + 5*24*60*60*1000).toISOString().slice(0,10),
-      formInicial: 'https://forms.google.com/exemplo1',
-      formContrato: 'https://forms.google.com/exemplo2',
-      observacoes: 'Projeto com necessidade de reforço de divulgação em reels.',
-      checklist: {audio:true, capa:false, release:true, posts:false, distribuicao:false},
-      historico: []
-    },
-    {
-      id: uid(),
-      artista: 'Juh Silva',
-      titulo: 'Bloqueado',
-      tipo: 'Single',
-      lancamento: new Date(Date.now() + 18*24*60*60*1000).toISOString().slice(0,10),
-      formInicial: '',
-      formContrato: '',
-      observacoes: 'Verificar playlisting 15 dias após lançamento.',
-      checklist: {audio:true, capa:true, release:true, posts:true, distribuicao:true},
-      historico: []
-    },
-    {
-      id: uid(),
-      artista: 'Atalaia Índio',
-      titulo: 'Raízes',
-      tipo: 'EP',
-      lancamento: new Date(Date.now() - 2*24*60*60*1000).toISOString().slice(0,10),
-      formInicial: '',
-      formContrato: '',
-      observacoes: 'Projeto exigiu remarcação e revisão de master.',
-      checklist: {audio:false, capa:true, release:false, posts:true, distribuicao:false},
-      historico: []
-    }
-  ];
-
-  examples.forEach(project => {
-    addHistory(project, 'Projeto criado via exemplo');
-    if(project.artista === 'Atalaia Índio') addHistory(project, 'Remarcado anteriormente por necessidade de regravação');
-  });
-
-  state.projetos.push(...examples);
-  state.lembretes.push({
-    id: uid(),
-    projectId: examples[0].id,
-    titulo: 'Revisar data na distribuidora',
-    data: new Date(Date.now() + 2*24*60*60*1000).toISOString().slice(0,10),
-    descricao: 'Conferir se a data está correta e se houve remarcação'
-  });
-  saveState();
-}
-
-async function sendToAppsScript(){
-  if(!settings.appsScriptUrl){
-    alert('Configure primeiro a URL do Apps Script na área de Integrações.');
-    return;
-  }
-
-  try{
-    const response = await fetch(settings.appsScriptUrl, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        source: 'Vale Producao Fase 5',
-        exportedAt: new Date().toISOString(),
-        projetos: state.projetos,
-        lembretes: state.lembretes
-      })
-    });
-
-    if(!response.ok) throw new Error('Falha ao enviar');
-    alert('Projetos enviados ao Apps Script com sucesso.');
-  }catch(error){
-    alert('Não foi possível concluir o envio. Verifique a URL publicada do Apps Script e as permissões do deploy.');
-  }
-}
-
-function bindActions(){
-  byId('projetoForm').addEventListener('submit', handleProjectSubmit);
-  byId('lembreteForm').addEventListener('submit', handleReminderSubmit);
-  byId('integracoesForm').addEventListener('submit', handleIntegrationsSubmit);
-  byId('buscaProjetos').addEventListener('input', renderProjects);
-
-  byId('btnExportJson').onclick = exportJson;
-  byId('btnExportCsv').onclick = exportCsv;
-  byId('btnSeed').onclick = seedExample;
-  byId('btnEnviarAppsScript').onclick = sendToAppsScript;
-
-  byId('btnAbrirFormInicial').onclick = () => settings.formInicial ? window.open(settings.formInicial, '_blank') : alert('Configure o link do formulário inicial.');
-  byId('btnAbrirFormContrato').onclick = () => settings.formContrato ? window.open(settings.formContrato, '_blank') : alert('Configure o link do formulário contratual.');
-  byId('btnAbrirCalendario').onclick = () => settings.calendario ? window.open(settings.calendario, '_blank') : alert('Configure o link do calendário.');
-}
-
-function byId(id){
-  return document.getElementById(id);
-}
-
-renderNav();
-bindActions();
-renderAll();
+byId('loginForm').addEventListener('submit',handleLogin);
+byId('logoutBtn').addEventListener('click',()=>{session=null;saveSession();});
+byId('projectForm').addEventListener('submit',handleProjectSubmit);
+byId('artistForm').addEventListener('submit',handleArtistSubmit);
+byId('settingsForm').addEventListener('submit',handleSettingsSubmit);
+byId('buscaProjetos').addEventListener('input',renderProjects);
+byId('btnExportJson').addEventListener('click',exportJson);
+byId('btnExportCsv').addEventListener('click',exportCsv);
+byId('btnSeed').addEventListener('click',seed);
+byId('btnSendApps').addEventListener('click',sendApps);
+updateShellVisibility();
