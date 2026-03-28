@@ -1,76 +1,460 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vale Produção Fase 14</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vale Produção CRM Final</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card glass">
+      <div class="brand-block">
+        <img src="assets/logo.svg" alt="Vale Produção" class="brand-logo" />
+        <div>
+          <p class="eyebrow">Sistema unificado</p>
+          <h1>Vale Produção CRM</h1>
+          <p class="muted">Visual corrigido, módulos integrados e build final estática para GitHub Pages.</p>
+        </div>
+      </div>
 
-<h1>Vale Produção - Painel de Negócio</h1>
-<p>v14.0.0 | 2026-03-28 16:06:52</p>
+      <form id="loginForm" class="auth-form">
+        <label>
+          Perfil
+          <select id="loginRole">
+            <option value="admin">Administrador</option>
+            <option value="artist">Artista</option>
+          </select>
+        </label>
+        <label>
+          Usuário
+          <input id="loginUser" type="text" placeholder="admin ou usuário do artista" required />
+        </label>
+        <label>
+          Senha
+          <input id="loginPass" type="password" placeholder="Digite a senha" required />
+        </label>
+        <button type="submit">Entrar</button>
+      </form>
 
-<div class="panel">
-<h2>Projetos</h2>
-<input id="nome" placeholder="Projeto">
-<input id="data" type="date">
-<input id="valor" type="number" placeholder="Receita prevista">
-<button onclick="addProjeto()">Salvar</button>
-<div id="projetos"></div>
-</div>
+      <div class="login-help">
+        <div class="mini-note">
+          <strong>Acesso inicial</strong>
+          <span>Admin: <code>admin</code> / <code>1234</code></span>
+        </div>
+        <div class="mini-note">
+          <strong>Build</strong>
+          <span>v18.0.0</span>
+          <span>2026-03-28 16:39:22</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<div class="panel">
-<h2>Financeiro</h2>
-<input id="fProj" placeholder="Projeto">
-<input id="fValor" type="number">
-<select id="fTipo"><option>Entrada</option><option>Saída</option></select>
-<button onclick="addFinance()">Salvar</button>
-<div id="finance"></div>
-</div>
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand-panel glass">
+        <img src="assets/logo.svg" alt="Vale Produção" class="brand-logo" />
+        <div>
+          <p class="eyebrow">Vale Produção</p>
+          <h2>CRM Final</h2>
+          <p id="sessionInfo" class="muted"></p>
+        </div>
+      </div>
 
-<div class="panel">
-<h2>Indicadores</h2>
-<div id="indicadores"></div>
-</div>
+      <nav id="navMenu" class="menu"></nav>
 
-<script>
-let db=JSON.parse(localStorage.getItem("vale14")||'{"projects":[],"finance":[]}');
+      <div class="build-panel glass">
+        <strong>Build</strong>
+        <span>v18.0.0</span>
+        <span>2026-03-28 16:39:22</span>
+      </div>
 
-function save(){localStorage.setItem("vale14",JSON.stringify(db));render();}
+      <button id="logoutBtn" class="danger wide-btn">Sair</button>
+    </aside>
 
-function addProjeto(){
-db.projects.push({nome:nome.value,data:data.value,valor:parseFloat(valor.value||0)});
-save();
-}
+    <main class="content">
+      <header class="topbar glass">
+        <div>
+          <p class="eyebrow">Painel operacional</p>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p class="muted">Projeto consolidado com as fases prometidas: cadastro, contratos, cronograma, arte, aprovações, financeiro, alertas, portal do artista e exportação.</p>
+        </div>
+        <div class="top-actions">
+          <button id="btnSeed" class="secondary">Carregar exemplo</button>
+          <button id="btnExportJson" class="secondary">Exportar JSON</button>
+        </div>
+      </header>
 
-function addFinance(){
-db.finance.push({proj:fProj.value,valor:parseFloat(fValor.value||0),tipo:fTipo.value});
-save();
-}
+      <section id="view-dashboard" class="view active"></section>
 
-function lucro(proj){
-let entradas=db.finance.filter(f=>f.proj===proj && f.tipo==="Entrada").reduce((a,b)=>a+b.valor,0);
-let saidas=db.finance.filter(f=>f.proj===proj && f.tipo==="Saída").reduce((a,b)=>a+b.valor,0);
-return entradas-saidas;
-}
+      <section id="view-projetos" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block" id="projectFormPanel">
+            <div class="section-head">
+              <h3>Novo projeto</h3>
+              <span class="tag">pipeline completo</span>
+            </div>
 
-function render(){
-projetos.innerHTML=db.projects.map(p=>`<div class="card">${p.nome} - lucro R$${lucro(p.nome)}</div>`).join("");
+            <form id="projectForm" class="form-grid">
+              <label>
+                Artista
+                <select id="projectArtist" required></select>
+              </label>
+              <label>
+                Título
+                <input id="projectTitle" type="text" placeholder="Ex.: Bloqueado" required />
+              </label>
+              <label>
+                Tipo
+                <select id="projectType">
+                  <option>Single</option>
+                  <option>EP</option>
+                  <option>Álbum</option>
+                  <option>Campanha</option>
+                </select>
+              </label>
+              <label>
+                Data de lançamento
+                <input id="projectReleaseDate" type="date" required />
+              </label>
+              <label>
+                Valor contratado
+                <input id="projectValue" type="number" min="0" step="0.01" placeholder="0,00" />
+              </label>
+              <label>
+                Status do contrato
+                <select id="projectContractStatus">
+                  <option>Pendente</option>
+                  <option>Enviado</option>
+                  <option>Assinado</option>
+                </select>
+              </label>
+              <label class="full">
+                Link do contrato
+                <input id="projectContractLink" type="url" placeholder="https://..." />
+              </label>
+              <label class="full">
+                Observações
+                <textarea id="projectNotes" rows="3" placeholder="Briefing, pendências, estratégia ou histórico"></textarea>
+              </label>
 
-finance.innerHTML=db.finance.map(f=>`<div class="card">${f.proj} - ${f.tipo} R$${f.valor}</div>`).join("");
+              <fieldset class="full">
+                <legend>Checklist obrigatório de lançamento</legend>
+                <div class="check-grid">
+                  <label><input id="ckBriefing" type="checkbox" /> Briefing</label>
+                  <label><input id="ckContrato" type="checkbox" /> Contrato</label>
+                  <label><input id="ckPre" type="checkbox" /> Pré-produção</label>
+                  <label><input id="ckGravacao" type="checkbox" /> Gravação</label>
+                  <label><input id="ckMix" type="checkbox" /> Mix / Master</label>
+                  <label><input id="ckArte" type="checkbox" /> Arte</label>
+                  <label><input id="ckRelease" type="checkbox" /> Release</label>
+                  <label><input id="ckPosts" type="checkbox" /> Posts</label>
+                  <label><input id="ckDistribuicao" type="checkbox" /> Distribuição</label>
+                  <label><input id="ckRevisao" type="checkbox" /> Revisão final</label>
+                </div>
+              </fieldset>
 
-let total=db.projects.length;
-let lucroTotal=db.projects.reduce((a,p)=>a+lucro(p.nome),0);
+              <div class="full actions-row">
+                <button type="submit">Salvar projeto</button>
+              </div>
+            </form>
+          </article>
 
-indicadores.innerHTML=`
-<div class="card">Projetos: ${total}</div>
-<div class="card">Lucro total: R$${lucroTotal}</div>
-`;
-}
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Projetos cadastrados</h3>
+              <input id="projectSearch" type="search" placeholder="Buscar projeto..." />
+            </div>
+            <div id="projectList" class="stack"></div>
+          </article>
+        </div>
+      </section>
 
-render();
-</script>
+      <section id="view-artistas" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block">
+            <div class="section-head">
+              <h3>Novo artista</h3>
+              <span class="tag">portal + login</span>
+            </div>
+            <form id="artistForm" class="form-grid">
+              <label>
+                Nome artístico
+                <input id="artistName" type="text" required />
+              </label>
+              <label>
+                Usuário do portal
+                <input id="artistUsername" type="text" required />
+              </label>
+              <label>
+                Senha do portal
+                <input id="artistPassword" type="text" required />
+              </label>
+              <label>
+                E-mail
+                <input id="artistEmail" type="email" placeholder="opcional" />
+              </label>
+              <label class="full">
+                Observações
+                <textarea id="artistNotes" rows="3"></textarea>
+              </label>
+              <div class="full actions-row">
+                <button type="submit">Salvar artista</button>
+              </div>
+            </form>
+          </article>
 
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Artistas cadastrados</h3>
+            </div>
+            <div id="artistList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-cronograma" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block">
+            <div class="section-head">
+              <h3>Novo item de cronograma</h3>
+              <span class="tag">editorial + operação</span>
+            </div>
+            <form id="scheduleForm" class="form-grid">
+              <label>
+                Projeto
+                <select id="scheduleProject" required></select>
+              </label>
+              <label>
+                Etapa
+                <select id="scheduleType">
+                  <option>Teaser</option>
+                  <option>Story</option>
+                  <option>Reels</option>
+                  <option>Pré-save</option>
+                  <option>Post de lançamento</option>
+                  <option>Pós-lançamento</option>
+                  <option>Pitching playlist</option>
+                  <option>Gravação</option>
+                  <option>Entrega de arte</option>
+                </select>
+              </label>
+              <label>
+                Data
+                <input id="scheduleDate" type="date" required />
+              </label>
+              <label>
+                Status
+                <select id="scheduleStatus">
+                  <option>Pendente</option>
+                  <option>Em produção</option>
+                  <option>Pronto</option>
+                  <option>Publicado</option>
+                </select>
+              </label>
+              <label class="full">
+                Descrição
+                <textarea id="scheduleNotes" rows="3"></textarea>
+              </label>
+              <div class="full actions-row">
+                <button type="submit">Salvar cronograma</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Cronograma</h3>
+            </div>
+            <div id="scheduleList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-aprovacoes" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block">
+            <div class="section-head">
+              <h3>Nova aprovação</h3>
+              <span class="tag">arte + release + master</span>
+            </div>
+            <form id="approvalForm" class="form-grid">
+              <label>
+                Projeto
+                <select id="approvalProject" required></select>
+              </label>
+              <label>
+                Tipo
+                <select id="approvalType">
+                  <option>Capa</option>
+                  <option>Release</option>
+                  <option>Cronograma de posts</option>
+                  <option>Master final</option>
+                </select>
+              </label>
+              <label>
+                Status
+                <select id="approvalStatus">
+                  <option>Pendente</option>
+                  <option>Aprovado</option>
+                  <option>Reprovado</option>
+                </select>
+              </label>
+              <label>
+                Link do arquivo
+                <input id="approvalLink" type="url" placeholder="https://..." />
+              </label>
+              <label class="full">
+                Observações
+                <textarea id="approvalNotes" rows="3"></textarea>
+              </label>
+              <div class="full actions-row">
+                <button type="submit">Salvar aprovação</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Aprovações</h3>
+            </div>
+            <div id="approvalList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-financeiro" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block">
+            <div class="section-head">
+              <h3>Movimento financeiro</h3>
+              <span class="tag">lucro por projeto</span>
+            </div>
+            <form id="financeForm" class="form-grid">
+              <label>
+                Projeto
+                <select id="financeProject" required></select>
+              </label>
+              <label>
+                Tipo
+                <select id="financeType">
+                  <option>Entrada</option>
+                  <option>Saída</option>
+                </select>
+              </label>
+              <label>
+                Valor
+                <input id="financeValue" type="number" min="0" step="0.01" required />
+              </label>
+              <label>
+                Data
+                <input id="financeDate" type="date" required />
+              </label>
+              <label class="full">
+                Descrição
+                <textarea id="financeNotes" rows="3"></textarea>
+              </label>
+              <div class="full actions-row">
+                <button type="submit">Salvar movimento</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Financeiro</h3>
+            </div>
+            <div id="financeList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-relatorios" class="view">
+        <div class="dashboard-grid" id="reportsGrid"></div>
+      </section>
+
+      <section id="view-portal" class="view">
+        <div class="two-col">
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Portal do artista</h3>
+              <span class="tag">visão simplificada</span>
+            </div>
+            <div id="portalProjects" class="stack"></div>
+          </article>
+
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Minhas aprovações</h3>
+            </div>
+            <div id="portalApprovals" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-integracoes" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block">
+            <div class="section-head">
+              <h3>Integrações</h3>
+              <span class="tag">preparado para Google</span>
+            </div>
+            <form id="settingsForm" class="form-grid">
+              <label class="full">
+                URL do Apps Script
+                <input id="cfgAppsScript" type="url" placeholder="https://script.google.com/..." />
+              </label>
+              <label class="full">
+                Google Form inicial
+                <input id="cfgFormInitial" type="url" placeholder="https://..." />
+              </label>
+              <label class="full">
+                Google Form contratual
+                <input id="cfgFormContract" type="url" placeholder="https://..." />
+              </label>
+              <label class="full">
+                Google Calendar
+                <input id="cfgCalendar" type="url" placeholder="https://calendar.google.com/..." />
+              </label>
+              <label class="full">
+                Meta mensal de lucro
+                <input id="cfgGoal" type="number" min="0" step="0.01" />
+              </label>
+              <div class="full actions-row">
+                <button type="submit">Salvar configurações</button>
+                <button type="button" id="btnSendAppsScript" class="secondary">Enviar ao Apps Script</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="panel glass">
+            <div class="section-head">
+              <h3>Status e atalhos</h3>
+            </div>
+            <div id="settingsStatus" class="stack"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="projectTemplate">
+    <article class="project-card glass">
+      <div class="project-head">
+        <div>
+          <h3 class="project-title"></h3>
+          <p class="project-meta"></p>
+        </div>
+        <span class="status-badge"></span>
+      </div>
+      <div class="project-stats"></div>
+      <div class="mini-grid"></div>
+      <div class="project-actions"></div>
+      <div class="history-list"></div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
 </body>
 </html>

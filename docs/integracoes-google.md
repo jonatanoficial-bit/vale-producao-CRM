@@ -1,13 +1,18 @@
-# Integrações Google - Fase 9
+# Integrações Google
 
-## O que já está pronto
-- configuração local da URL do Apps Script
-- exportação do estado completo para Web App do Apps Script
-- links de Google Calendar por projeto
-- base para integrar formulários, contratos e cronograma
+## Preparado para
+- Google Apps Script
+- Google Forms
+- Google Calendar
 
-## Próximos passos sugeridos
-- sincronizar cronograma com Google Calendar
-- gravar aprovações e contratos em Sheets
-- disparar e-mails automáticos
-- integrar status do Autentique por link
+## Uso recomendado
+1. Publicar o `apps-script/Code.gs` como Web App
+2. Colar a URL no campo Apps Script
+3. Salvar as configurações
+4. Usar o botão de envio dentro do painel
+
+## Sugestões
+- gravar projetos em Sheets
+- sincronizar calendário
+- registrar aprovações
+- acompanhar cronograma
