@@ -4,8 +4,9 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v22.0.0', datetime: '2026-04-02 19:26:38' };
+const BUILD = { version: 'v23.0.0', datetime: '2026-04-02 20:03:14' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
+let deferredInstallPrompt = null;
 const live = { users: [], projects: [], schedule: [], approvals: [], finance: [], analytics: [], settings: {} };
 
 const byId = id => document.getElementById(id);
@@ -474,6 +475,52 @@ async function seedData(){
   await addDoc(collection(db, 'finance'), { projectId: ref.id, type: 'Entrada', value: 900, date: new Date().toISOString().slice(0,10), notes: 'Entrada exemplo', createdAt: serverTimestamp() });
 }
 
+
+function updateInstallButtonsVisibility(){
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  document.body.classList.toggle('is-standalone', standalone);
+  ['btnInstallApp','sidebarInstallApp'].forEach(id => {
+    const el = byId(id);
+    if (!el) return;
+    if (standalone) {
+      el.style.display = 'none';
+    } else {
+      el.style.display = deferredInstallPrompt ? '' : '';
+      el.disabled = false;
+      el.title = '';
+    }
+  });
+}
+async function handleInstallApp(){
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (standalone) return alert('O app já está instalado neste dispositivo.');
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      deferredInstallPrompt = null;
+      updateInstallButtonsVisibility();
+    }
+    return;
+  }
+  alert('Se o botão de instalação nativa não aparecer, abra o menu do navegador e escolha "Instalar app" ou "Adicionar à tela inicial".');
+}
+function registerPwa(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    updateInstallButtonsVisibility();
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    updateInstallButtonsVisibility();
+  });
+  updateInstallButtonsVisibility();
+}
+
 function bindTabs(){
   byId('tabLogin').onclick = () => {
     byId('tabLogin').classList.add('active');
@@ -673,6 +720,7 @@ function initFirebase(){
 }
 
 bindEvents();
+registerPwa();
 if(initFirebase()) {
   onAuthStateChanged(auth, async user => {
     if(!user) {

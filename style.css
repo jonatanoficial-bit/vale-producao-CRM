@@ -344,3 +344,14 @@ input:focus,select:focus,textarea:focus{
   .brand-panel h2{font-size:1.7rem}
   .analytics-hero{flex-direction:column}
 }
+
+
+.install-hint{
+  margin-top:10px;
+  font-size:.9rem;
+  color:var(--muted);
+}
+.is-standalone #btnInstallApp,
+.is-standalone #sidebarInstallApp{
+  display:none!important;
+}

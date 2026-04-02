@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071124">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -41,7 +44,7 @@
       </form>
 
       <div class="stack">
-        <div class="item"><div class="item-title">Build</div><div class="item-sub">v22.0.0 · 2026-04-02 19:26:38</div></div>
+        <div class="item"><div class="item-title">Build</div><div class="item-sub">v23.0.0 · 2026-04-02 19:26:38</div></div>
         <div class="item"><div class="item-title">Admin</div><div class="item-sub">O e-mail definido em <code>firebase-config.js</code> será admin.</div></div>
       </div>
       <p id="authMessage" class="status-line"></p>
@@ -59,7 +62,8 @@
         </div>
       </div>
       <nav id="navMenu" class="menu"></nav>
-      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v22.0.0 · 2026-04-02 19:26:38</div></div>
+      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v23.0.0 · 2026-04-02 19:26:38</div></div>
+      <button id="sidebarInstallApp" class="secondary wide-btn">Instalar app</button>
       <button id="logoutBtn" class="danger wide-btn">Sair</button>
     </aside>
 
@@ -71,6 +75,7 @@
           <p class="muted">Visual premium, analytics mais impactante e a mesma base operacional já funcionando.</p>
         </div>
         <div class="top-actions">
+          <button id="btnInstallApp" class="secondary">Instalar app</button>
           <button id="btnSeed" class="secondary admin-only">Carregar exemplo</button>
           <button id="btnExportJson" class="secondary admin-only">Exportar JSON</button>
         </div>

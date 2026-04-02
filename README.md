@@ -13,3 +13,14 @@ Build: **2026-04-02 19:26:38**
 ## Compatibilidade
 Esta evolução foca em visual e apresentação.
 Ela preserva a base já construída para evitar impacto nos usuários e dados existentes.
+
+
+## Evolução v23
+- botão para instalar o app no dispositivo
+- manifest PWA
+- service worker para uso como aplicativo
+- ícones de instalação
+- mesma configuração Firebase preservada
+
+Versão: **v23.0.0**  
+Build: **2026-04-02 20:03:14**
