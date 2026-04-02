@@ -1,10 +1,10 @@
 export const firebaseAppConfig = {
-  apiKey: "PREENCHA_AQUI",
-  authDomain: "PREENCHA_AQUI",
-  projectId: "PREENCHA_AQUI",
-  storageBucket: "PREENCHA_AQUI",
-  messagingSenderId: "PREENCHA_AQUI",
-  appId: "PREENCHA_AQUI"
+  apiKey: "AIzaSyB5PdFEtCPWAfc_4o1CQGeWTJ21OQeEf4M",
+  authDomain: "vale-producao.firebaseapp.com",
+  projectId: "vale-producao",
+  storageBucket: "vale-producao.firebasestorage.app",
+  messagingSenderId: "935813222416",
+  appId: "1:935813222416:web:af9c475cbf9caa87dcfa95"
 };
 
-export const ADMIN_EMAIL = "admin@seudominio.com";
+export const ADMIN_EMAIL = "SEU_EMAIL_ADMIN_AQUI";
