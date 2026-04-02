@@ -1,22 +1,15 @@
 # Vale Produção CRM Online Real
 
-Versão: **v20.1.0**  
-Build: **2026-04-02 15:48:12**
+Versão: **v22.0.0**
+Build: **2026-04-02 19:26:38**
 
-## Evolução adicionada
-- agenda crítica de lançamentos
-- exportação para Google Calendar
-- geração de arquivo `.ics`
-- notificações do navegador para prazos e pendências
-- analytics manual lançado pelo admin e visível ao cantor
-- compatível com o mesmo Firebase já configurado
+## Evolução desta fase
+- visual premium renovado
+- analytics do artista com aparência mais impactante
+- botões, cards, fundo e painéis refinados
+- mesma base funcional preservada
+- nenhuma troca na configuração do Firebase
 
-## Importante
-Esta atualização mantém:
-- o mesmo projeto Firebase
-- o mesmo `firebase-config.js`
-- os usuários já cadastrados
-- os projetos já salvos
-
-## Observação
-As notificações desta versão são do navegador. Elas funcionam quando o painel é aberto ou quando a verificação manual é acionada.
+## Compatibilidade
+Esta evolução foca em visual e apresentação.
+Ela preserva a base já construída para evitar impacto nos usuários e dados existentes.

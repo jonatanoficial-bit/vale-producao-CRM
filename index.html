@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Vale Produção CRM Online Real</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -38,7 +41,7 @@
       </form>
 
       <div class="stack">
-        <div class="item"><div class="item-title">Build</div><div class="item-sub">v20.1.0 · 2026-03-31 21:08:49</div></div>
+        <div class="item"><div class="item-title">Build</div><div class="item-sub">v22.0.0 · 2026-04-02 19:26:38</div></div>
         <div class="item"><div class="item-title">Admin</div><div class="item-sub">O e-mail definido em <code>firebase-config.js</code> será admin.</div></div>
       </div>
       <p id="authMessage" class="status-line"></p>
@@ -56,7 +59,7 @@
         </div>
       </div>
       <nav id="navMenu" class="menu"></nav>
-      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v20.1.0 · 2026-03-31 21:08:49</div></div>
+      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v22.0.0 · 2026-04-02 19:26:38</div></div>
       <button id="logoutBtn" class="danger wide-btn">Sair</button>
     </aside>
 
@@ -65,7 +68,7 @@
         <div>
           <p class="eyebrow">CRM compartilhado</p>
           <h1 id="pageTitle">Dashboard</h1>
-          <p class="muted">Todos acessam o mesmo banco online.</p>
+          <p class="muted">Visual premium, analytics mais impactante e a mesma base operacional já funcionando.</p>
         </div>
         <div class="top-actions">
           <button id="btnSeed" class="secondary admin-only">Carregar exemplo</button>
@@ -193,14 +196,67 @@
         </div>
       </section>
 
+
+      <section id="view-operacao" class="view">
+        <div class="two-col">
+          <article class="panel glass">
+            <div class="section-head"><h3>Painel de urgência</h3><span class="tag">prioridade real</span></div>
+            <div id="operationsList" class="stack"></div>
+          </article>
+          <article class="panel glass">
+            <div class="section-head"><h3>Checklist de risco</h3><span class="tag">anti-esquecimento</span></div>
+            <div id="riskChecklistList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-analytics" class="view">
+        <div class="two-col">
+          <article class="panel glass admin-only-block">
+            <div class="section-head"><h3>Lançar analytics manual</h3><span class="tag">sem API externa</span></div>
+            <form id="analyticsForm" class="form-grid">
+              <label>Projeto
+                <select id="analyticsProject" required></select>
+              </label>
+              <label>Data do relatório
+                <input id="analyticsDate" type="date" required>
+              </label>
+              <label>Streams
+                <input id="analyticsStreams" type="number" min="0" step="1">
+              </label>
+              <label>Visualizações
+                <input id="analyticsViews" type="number" min="0" step="1">
+              </label>
+              <label>Alcance
+                <input id="analyticsReach" type="number" min="0" step="1">
+              </label>
+              <label>Playlists
+                <input id="analyticsPlaylists" type="number" min="0" step="1">
+              </label>
+              <label>Engajamento
+                <input id="analyticsEngagement" type="text" placeholder="Ex.: bom, médio, alto">
+              </label>
+              <label>Próximo passo
+                <input id="analyticsNextStep" type="text" placeholder="Ex.: reforçar reels">
+              </label>
+              <label class="full">Observações
+                <textarea id="analyticsNotes" rows="3" placeholder="Resumo manual do desempenho"></textarea>
+              </label>
+              <div class="full actions-row"><button type="submit">Salvar analytics</button></div>
+            </form>
+          </article>
+          <article class="panel glass">
+            <div class="section-head"><h3>Analytics do artista</h3><span class="tag">visível ao cantor</span></div>
+            <div id="analyticsList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
+
       <section id="view-portal" class="view">
         <div class="two-col">
           <article class="panel glass"><div class="section-head"><h3>Meus projetos</h3></div><div id="portalProjects" class="stack"></div></article>
           <article class="panel glass"><div class="section-head"><h3>Minhas aprovações</h3></div><div id="portalApprovals" class="stack"></div></article>
-        </div>
-        <div class="panel glass" style="margin-top:18px">
-          <div class="section-head"><h3>Meu desempenho</h3><span class="tag">analytics manual</span></div>
-          <div id="portalAnalytics" class="stack"></div>
         </div>
       </section>
 
@@ -211,67 +267,6 @@
         </div>
       </section>
 
-      
-      <section id="view-agenda" class="view">
-        <div class="two-col">
-          <article class="panel glass">
-            <div class="section-head"><h3>Agenda crítica</h3><span class="tag">7 dias</span></div>
-            <div id="agendaList" class="stack"></div>
-          </article>
-          <article class="panel glass">
-            <div class="section-head"><h3>Lembretes automáticos</h3><span class="tag">navegador</span></div>
-            <div class="stack">
-              <div class="item"><div class="item-title">Permissão de notificações</div><div id="notificationStatus" class="item-sub">Não verificado</div></div>
-              <div class="item"><div class="item-title">Ações</div><div class="item-sub"><div class="item-actions"><button id="btnEnableNotifications" class="secondary">Ativar notificações</button><button id="btnRunReminderScan" class="secondary">Verificar alertas agora</button></div></div></div>
-              <div class="item"><div class="item-title">Como funciona</div><div class="item-sub">Em GitHub Pages as notificações são do navegador. Elas aparecem quando o painel é aberto ou quando você verifica manualmente.</div></div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="view-calendario" class="view">
-        <div class="two-col">
-          <article class="panel glass">
-            <div class="section-head"><h3>Exportação de calendário</h3><span class="tag">Google Calendar</span></div>
-            <div id="calendarExportList" class="stack"></div>
-          </article>
-          <article class="panel glass">
-            <div class="section-head"><h3>Uso recomendado</h3><span class="tag">sem custo</span></div>
-            <div class="stack">
-              <div class="item"><div class="item-title">Google Calendar</div><div class="item-sub">Abra o evento já preenchido e salve no seu calendário.</div></div>
-              <div class="item"><div class="item-title">Arquivo ICS</div><div class="item-sub">Baixe um .ics por projeto e importe em qualquer agenda.</div></div>
-              <div class="item"><div class="item-title">Proteção dupla</div><div class="item-sub">Use o CRM + calendário para não esquecer lançamentos, revisões e teasers.</div></div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="view-analytics" class="view">
-        <div class="two-col">
-          <article class="panel glass admin-only-block">
-            <div class="section-head"><h3>Analytics manual</h3><span class="tag">admin lança</span></div>
-            <form id="analyticsForm" class="form-grid">
-              <label>Projeto<select id="analyticsProject" required></select></label>
-              <label>Período<input id="analyticsPeriod" type="text" placeholder="Ex.: Semana 1 pós-lançamento" required></label>
-              <label>Plataforma<select id="analyticsPlatform"><option>Spotify</option><option>YouTube</option><option>Instagram</option><option>TikTok</option><option>Geral</option></select></label>
-              <label>Streams / Views<input id="analyticsStreams" type="number" min="0" step="1"></label>
-              <label>Alcance<input id="analyticsReach" type="number" min="0" step="1"></label>
-              <label>Playlists<input id="analyticsPlaylists" type="number" min="0" step="1"></label>
-              <label>Posts publicados<input id="analyticsPosts" type="number" min="0" step="1"></label>
-              <label>Engajamento (%)<input id="analyticsEngagement" type="number" min="0" step="0.1"></label>
-              <label class="full">Resumo para o artista<textarea id="analyticsSummary" rows="3" placeholder="Resumo manual visível no dashboard do cantor"></textarea></label>
-              <label class="full">Próximo passo<textarea id="analyticsNextStep" rows="3" placeholder="Ex.: intensificar reels, tentar playlists, novo teaser"></textarea></label>
-              <div class="full actions-row"><button type="submit">Salvar analytics</button></div>
-            </form>
-          </article>
-          <article class="panel glass">
-            <div class="section-head"><h3>Resultados manuais</h3><span class="tag">visível ao cantor</span></div>
-            <div id="analyticsList" class="stack"></div>
-          </article>
-        </div>
-      </section>
-
-
       <section id="view-integracoes" class="view">
         <div class="two-col">
           <article class="panel glass admin-only-block">
@@ -281,7 +276,6 @@
               <label class="full">Google Form inicial<input id="cfgFormInitial" type="url"></label>
               <label class="full">Google Form contratual<input id="cfgFormContract" type="url"></label>
               <label class="full">Google Calendar<input id="cfgCalendar" type="url"></label>
-              <label class="full">Dias para alertar lançamento<input id="cfgAlertDays" type="number" min="1" step="1"></label>
               <div class="full actions-row"><button type="submit">Salvar configurações</button></div>
             </form>
           </article>
