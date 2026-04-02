@@ -1,36 +1,29 @@
-# Vale Produção CRM Final
+# Vale Produção CRM Online Real
 
-Versão: **v18.0.0**  
-Build: **2026-03-28 16:39:22**
+Versão: **v19.1.0**  
+Build: **2026-03-31 21:08:49**
 
-## O que este pacote entrega
-- visual corrigido e unificado
-- sistema único, estático e pronto para GitHub Pages
-- login local por perfil
-- painel admin e portal do artista
-- cadastro de artistas
-- cadastro de projetos
-- checklist obrigatório de lançamento
-- travas reais para confirmação de lançamento
-- remarcação com histórico
-- cronograma editorial e operacional
-- aprovações
-- financeiro por projeto
-- lucro por projeto
-- dashboard com alertas inteligentes
-- relatórios executivos
-- exportação JSON
-- área de integrações preparada para Apps Script, Forms e Calendar
+## Esta é a versão online real completa
+- login real com Firebase Auth
+- banco compartilhado com Firestore
+- admin e artistas acessando o mesmo sistema
+- projetos, cronograma, aprovações e financeiro em nuvem
+- portal do artista filtrado pelo login
+- visual corrigido e pronto para GitHub Pages
 
-## Acesso inicial
-- Admin: `admin`
-- Senha: `1234`
+## Como fica o acesso geral online
+1. você publica no GitHub Pages
+2. todo mundo entra no mesmo link
+3. cada pessoa faz login com e-mail e senha
+4. os dados ficam online no Firestore
+5. o admin vê tudo
+6. o artista vê apenas os projetos vinculados ao UID dele
 
-## Publicação no GitHub Pages
-1. Extraia o ZIP
-2. Envie todos os arquivos para um repositório
-3. Ative GitHub Pages apontando para a branch principal
-4. O arquivo inicial é `index.html`
-
-## Observação
-Este projeto funciona 100% no navegador com `localStorage`.
+## Fluxo correto
+1. preencher `firebase-config.js`
+2. definir o e-mail do admin em `ADMIN_EMAIL`
+3. publicar
+4. criar a conta admin com esse e-mail
+5. pedir para os artistas criarem conta
+6. entrar como admin e vincular as contas em Artistas
+7. criar projetos apontando para o artista correto
