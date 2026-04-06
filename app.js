@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v25.0.0', datetime: '2026-04-06 21:37:51' };
+const BUILD = { version: 'v26.0.0', datetime: '2026-04-06 22:26:25' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -35,28 +35,49 @@ function projectSchedule(id){ return live.schedule.filter(s => s.projectId === i
 function projectFinance(id){ return live.finance.filter(f => f.projectId === id); }
 function projectProfit(id){ return projectFinance(id).reduce((a,i) => a + (i.type==='Entrada' ? Number(i.value||0) : -Number(i.value||0)), 0); }
 function checklistComplete(p){ return Object.values(p.pipeline || {}).every(Boolean); }
+function criticalChecklistComplete(p){
+  const pipeline = p.pipeline || {};
+  return Boolean(
+    pipeline.briefing &&
+    pipeline.contract &&
+    pipeline.preproduction &&
+    pipeline.recording &&
+    pipeline.mix &&
+    pipeline.art &&
+    pipeline.release &&
+    pipeline.distribution &&
+    pipeline.review
+  );
+}
+function launchedStatus(p){
+  return Boolean(p.launched || p.status === 'Lançado');
+}
 function projectStatus(p){
   const d = daysUntil(p.releaseDate);
-  if(d < 0) return 'ATRASADO';
-  if(d <= 7 && !checklistComplete(p)) return 'EM RISCO';
-  if(checklistComplete(p)) return 'PRONTO';
+  if (launchedStatus(p)) return 'LANÇADO';
+  if(d < 0 && !criticalChecklistComplete(p)) return 'ATRASADO';
+  if(d <= 7 && !criticalChecklistComplete(p)) return 'EM RISCO';
+  if(criticalChecklistComplete(p)) return 'PRONTO';
   return 'EM PRODUÇÃO';
 }
 function statusClass(s){
+  if(s==='LANÇADO') return 'status-lancado';
   if(s==='PRONTO') return 'status-pronto';
   if(s==='EM RISCO') return 'status-risco';
   if(s==='ATRASADO') return 'status-atrasado';
   return 'status-producao';
 }
 function priorityScore(p){
+  if (launchedStatus(p)) return 0;
   const d = daysUntil(p.releaseDate);
   let s = 0;
   if(projectStatus(p)==='ATRASADO') s += 100;
   if(projectStatus(p)==='EM RISCO') s += 60;
-  if(!checklistComplete(p)) s += 25;
-  if(p.contractStatus !== 'Assinado') s += 10;
+  if(!criticalChecklistComplete(p)) s += 25;
+  if((p.contractStatus || '') !== 'Assinado') s += 10;
   s += Math.max(0, 30 - Math.max(d, 0));
   s += projectApprovals(p.id).filter(a => a.status === 'Pendente').length * 8;
+  s += projectSchedule(p.id).filter(s => s.status !== 'Publicado' && daysUntil(s.date) <= 2).length * 6;
   return s;
 }
 function monthlyNet(){
@@ -67,13 +88,14 @@ function monthlyNet(){
 function collectAlerts(projects){
   const alerts = [];
   projects.forEach(p => {
+    if (launchedStatus(p)) return;
     const d = daysUntil(p.releaseDate);
     if(d < 0) alerts.push({title:'Projeto atrasado', text:`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`});
-    if(d <= 5 && d >= 0) alerts.push({title:'Lançamento próximo', text:`${p.title} lança em ${d} dia(s).`});
-    if(!checklistComplete(p)) alerts.push({title:'Checklist incompleto', text:`${p.title} ainda não concluiu todas as etapas.`});
-    if(p.contractStatus !== 'Assinado') alerts.push({title:'Contrato pendente', text:`${p.title} está com contrato ${String(p.contractStatus||'').toLowerCase()}.`});
+    if(d <= Number(live.settings.releaseAlertDays || 7) && d >= 0) alerts.push({title:'Lançamento próximo', text:`${p.title} lança em ${d} dia(s).`});
+    if(!criticalChecklistComplete(p)) alerts.push({title:'Checklist crítico incompleto', text:`${p.title} ainda não concluiu as etapas críticas do lançamento.`});
+    if((p.contractStatus || '') !== 'Assinado') alerts.push({title:'Contrato pendente', text:`${p.title} está com contrato ${String(p.contractStatus||'').toLowerCase()}.`});
   });
-  return alerts.slice(0, 12);
+  return alerts.slice(0, 20);
 }
 function recommendation(projects){
   const monthly = monthlyNet(), goal = Number(live.settings.monthlyGoal || 0);
@@ -335,12 +357,13 @@ function latestAnalytics(projectId){
   return rows[0] || null;
 }
 function riskReasons(project){
+  if (launchedStatus(project)) return ['Projeto já lançado'];
   const reasons = [];
   const d = daysUntil(project.releaseDate);
   if (d < 0) reasons.push('Lançamento vencido');
   if (d <= 7 && d >= 0) reasons.push('Lançamento em até 7 dias');
-  if (!checklistComplete(project)) reasons.push('Checklist incompleto');
-  if (project.contractStatus !== 'Assinado') reasons.push('Contrato pendente');
+  if (!criticalChecklistComplete(project)) reasons.push('Checklist crítico incompleto');
+  if ((project.contractStatus || '') !== 'Assinado') reasons.push('Contrato pendente');
   if (projectApprovals(project.id).some(a => a.status === 'Pendente')) reasons.push('Aprovação pendente');
   if (projectSchedule(project.id).some(s => s.status !== 'Publicado' && daysUntil(s.date) <= 2)) reasons.push('Cronograma crítico');
   return reasons;
@@ -350,7 +373,7 @@ function renderDashboard(){
   const projects = visibleProjects();
   const alerts = collectAlerts(projects);
   const top = [...projects].sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,6);
-  const urgent = projects.filter(p => daysUntil(p.releaseDate) <= 7).length;
+  const urgent = projects.filter(p => !launchedStatus(p) && daysUntil(p.releaseDate) <= 7).length;
   byId('view-dashboard').innerHTML = `
     <div class="dashboard-grid">
       ${metricCard('Projetos', projects.length)}
@@ -410,7 +433,8 @@ function renderProjects(){
       actions.querySelector('.btn-contrato').onclick = () => p.contractLink ? window.open(p.contractLink, '_blank') : alert('Sem link de contrato.');
       actions.querySelector('.btn-calendar').onclick = () => window.open(projectCalendarLink(p), '_blank');
       const launch = actions.querySelector('.btn-launch');
-      if(!checklistComplete(p)){ launch.disabled = true; launch.classList.add('secondary'); }
+      if(launchedStatus(p)){ launch.disabled = true; launch.classList.add('secondary'); }
+      else if(!criticalChecklistComplete(p)){ launch.disabled = true; launch.classList.add('secondary'); }
       else launch.onclick = () => confirmRelease(p.id);
       actions.querySelector('.btn-delete').onclick = () => removeDocGeneric('projects', p.id);
     } else {
@@ -457,7 +481,7 @@ function renderPortal(){
         const analyticsText = la ? `<div class="portal-highlight">Último analytics · ${fmtDate(la.date)} · listeners ${Number(la.listeners||0).toLocaleString('pt-BR')} · streams ${Number(la.streams||0).toLocaleString('pt-BR')} · followers ${Number(la.followers||0).toLocaleString('pt-BR')}</div>` : '';
         return `<div class="item">
           <div class="item-title">${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}</div>
-          <div class="item-sub">Status ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)} · contrato ${p.contractStatus}</div>
+          <div class="item-sub">Status ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)} · contrato ${p.contractStatus}${launchedStatus(p) ? ' · entregue' : ''}</div>
           ${analyticsText}
         </div>`;
       }).join('')
@@ -476,7 +500,7 @@ function renderAlerts(){
 
 function renderOperations(){
   if(!isAdmin()) return;
-  const projects = [...visibleProjects()].sort((a,b)=>priorityScore(b)-priorityScore(a));
+  const projects = [...visibleProjects()].filter(p => !launchedStatus(p)).sort((a,b)=>priorityScore(b)-priorityScore(a));
   const urgentRows = projects.filter(p => priorityScore(p) > 20).slice(0,10);
   byId('operationsList').innerHTML = urgentRows.length
     ? urgentRows.map(p => itemHtml(
@@ -699,11 +723,11 @@ async function addManualHistory(id){
 }
 async function confirmRelease(id){
   const p = projectById(id);
-  if(!checklistComplete(p)) return alert('Lançamento bloqueado: checklist incompleto.');
+  if(!criticalChecklistComplete(p)) return alert('Lançamento bloqueado: etapas críticas incompletas. Posts e pós-lançamento não travam, mas briefing, contrato, pré, gravação, mix, arte, release, distribuição e revisão precisam estar concluídos.');
   if(!confirm(`Confirmar lançamento de ${p.title}?`)) return;
   const typed = prompt('Digite LANÇAR para concluir.');
   if(typed !== 'LANÇAR') return alert('Confirmação cancelada.');
-  await updateDoc(doc(db, 'projects', id), { launched: true });
+  await updateDoc(doc(db, 'projects', id), { launched: true, status: 'Lançado' });
   await appendHistory(id, 'Lançamento confirmado com dupla validação');
 }
 async function removeDocGeneric(coll, id){
@@ -736,6 +760,7 @@ async function seedData(){
     contractLink: '',
     notes: 'Projeto exemplo salvo online.',
     launched: false,
+    status: 'Em produção',
     createdAt: serverTimestamp(),
     pipeline: { briefing: true, contract: true, preproduction: true, recording: true, mix: true, art: false, release: true, posts: false, distribution: false, review: false },
     history: [{ ts: new Date().toISOString(), text: 'Projeto criado via exemplo online' }]
@@ -862,6 +887,7 @@ function bindEvents(){
       contractLink: byId('projectContractLink').value.trim(),
       notes: byId('projectNotes').value.trim(),
       launched: false,
+      status: 'Em produção',
       createdAt: serverTimestamp(),
       pipeline: {
         briefing: byId('ckBriefing').checked,

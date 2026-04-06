@@ -538,3 +538,5 @@ input:focus,select:focus,textarea:focus{
   background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
   border:1px solid rgba(255,255,255,.08);
 }
+
+.status-lancado{background:rgba(103,228,194,.18);color:#d6fff1}

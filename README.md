@@ -1,12 +1,11 @@
 # Vale Produção CRM Online Real
 
-Versão: **v25.0.0**
-Build: **2026-04-06 21:37:51**
+Versão: **v26.0.0**
+Build: **2026-04-06 22:26:25**
 
-## Evolução v25
-- analytics manual simplificado
-- sem necessidade de JSON para preencher
-- overview por números separados por vírgula
-- evolução da audiência em campos próprios
-- países por linha no formato simples
+## Evolução v26
+- lógica de atraso corrigida
+- projeto lançado não aparece mais como atrasado
+- posts e pós-lançamento não travam lançamento
+- prioridade operacional agora foca só no que ainda não foi lançado
 - mesma base Firebase preservada
