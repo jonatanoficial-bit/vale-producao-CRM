@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v24.0.0', datetime: '2026-04-06 19:11:33' };
+const BUILD = { version: 'v25.0.0', datetime: '2026-04-06 21:37:51' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -123,6 +123,28 @@ function destroyAnalyticsCharts(){
   analyticsCharts.forEach(chart => { try { chart.destroy(); } catch(e) {} });
   analyticsCharts = [];
 }
+
+function parseNumberCsv(value){
+  if (!value || !String(value).trim()) return [];
+  return String(value).split(',').map(v => Number(String(v).trim().replace(',', '.')) || 0);
+}
+function parseLabelCsv(value){
+  if (!value || !String(value).trim()) return [];
+  return String(value).split(',').map(v => String(v).trim()).filter(Boolean);
+}
+function parseCountriesLines(value){
+  if (!value || !String(value).trim()) return [];
+  return String(value).split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+    const parts = line.split('|').map(p => p.trim());
+    return {
+      country: parts[0] || '',
+      listeners: Number(parts[1] || 0),
+      activePct: Number(parts[2] || 0),
+      activeListeners: Number(parts[3] || 0)
+    };
+  });
+}
+
 function parseJsonSafe(value, fallback){
   if (!value || !String(value).trim()) return fallback;
   try { return JSON.parse(value); } catch(e) { return fallback; }
@@ -926,9 +948,15 @@ function bindEvents(){
     e.preventDefault();
     if(!isAdmin()) return;
 
-    const overviewTrend = parseJsonSafe(byId('analyticsOverviewTrend').value, []);
-    const audienceTrend = parseJsonSafe(byId('analyticsAudienceTrend').value, { labels: [], totalAudience: [], monthlyActive: [], previouslyActive: [], programmed: [] });
-    const countries = parseJsonSafe(byId('analyticsCountriesJson').value, []);
+    const overviewTrend = parseNumberCsv(byId('analyticsOverviewTrend').value);
+    const audienceTrend = {
+      labels: parseLabelCsv(byId('analyticsAudienceLabels').value),
+      totalAudience: parseNumberCsv(byId('analyticsAudienceTotal').value),
+      monthlyActive: parseNumberCsv(byId('analyticsAudienceMonthlyActive').value),
+      previouslyActive: parseNumberCsv(byId('analyticsAudiencePreviouslyActive').value),
+      programmed: parseNumberCsv(byId('analyticsAudienceProgrammed').value)
+    };
+    const countries = parseCountriesLines(byId('analyticsCountriesJson').value);
 
     await addDoc(collection(db, 'analytics'), {
       projectId: byId('analyticsProject').value,

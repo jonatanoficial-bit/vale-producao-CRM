@@ -531,3 +531,10 @@ input:focus,select:focus,textarea:focus{
   .analytics-country-row{grid-template-columns:1fr 1fr}
   .analytics-top{flex-direction:column}
 }
+
+.analytics-help-box{
+  padding:16px 18px;
+  border-radius:18px;
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.08);
+}

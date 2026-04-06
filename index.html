@@ -45,7 +45,7 @@
       </form>
 
       <div class="stack">
-        <div class="item"><div class="item-title">Build</div><div class="item-sub">v24.0.0 · 2026-04-02 19:26:38</div></div>
+        <div class="item"><div class="item-title">Build</div><div class="item-sub">v25.0.0 · 2026-04-02 19:26:38</div></div>
         <div class="item"><div class="item-title">Admin</div><div class="item-sub">O e-mail definido em <code>firebase-config.js</code> será admin.</div></div>
       </div>
       <p id="authMessage" class="status-line"></p>
@@ -63,7 +63,7 @@
         </div>
       </div>
       <nav id="navMenu" class="menu"></nav>
-      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v24.0.0 · 2026-04-02 19:26:38</div></div>
+      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v25.0.0 · 2026-04-02 19:26:38</div></div>
       <button id="sidebarInstallApp" class="secondary wide-btn">Instalar app</button>
       <button id="logoutBtn" class="danger wide-btn">Sair</button>
     </aside>
@@ -330,16 +330,48 @@
           </div>
         </fieldset>
 
-        <label class="full">Série do overview (JSON array)
-          <textarea id="analyticsOverviewTrend" rows="3" placeholder='Ex.: [2,1,1,3,8,2,1,1,0,2,1,3]'></textarea>
+        <div class="full analytics-help-box">
+          <div class="item-title">Preenchimento simplificado</div>
+          <div class="item-sub">
+            Você não precisa usar JSON. Basta preencher números separados por vírgula e países em linhas.
+            <br><br>
+            <strong>Exemplo overview:</strong> 2,1,1,3,8,2,1,1,0,2,1,3
+            <br>
+            <strong>Exemplo labels:</strong> Mar 10, Mar 17, Mar 24, Mar 31
+            <br>
+            <strong>Exemplo países:</strong>
+            <br>Brasil | 17 | 71.4 | 12
+            <br>Estados Unidos | 10 | 10 | 1
+          </div>
+        </div>
+
+        <label class="full">Série do overview (números separados por vírgula)
+          <textarea id="analyticsOverviewTrend" rows="3" placeholder="Ex.: 2,1,1,3,8,2,1,1,0,2,1,3"></textarea>
         </label>
 
-        <label class="full">Série audience (JSON object)
-          <textarea id="analyticsAudienceTrend" rows="5" placeholder='Ex.: {"labels":["Mar 10","Mar 17","Mar 24","Mar 31"],"totalAudience":[41,52,54,56],"monthlyActive":[13,15,6,6],"previouslyActive":[15,15,25,26],"programmed":[13,24,24,24]}'></textarea>
-        </label>
+        <fieldset class="full">
+          <legend>Evolução da audiência (fácil)</legend>
+          <div class="form-grid">
+            <label class="full">Datas / labels
+              <input id="analyticsAudienceLabels" type="text" placeholder="Ex.: Mar 10, Mar 17, Mar 24, Mar 31">
+            </label>
+            <label>Total audience
+              <input id="analyticsAudienceTotal" type="text" placeholder="Ex.: 41,52,54,56">
+            </label>
+            <label>Monthly active
+              <input id="analyticsAudienceMonthlyActive" type="text" placeholder="Ex.: 13,15,6,6">
+            </label>
+            <label>Previously active
+              <input id="analyticsAudiencePreviouslyActive" type="text" placeholder="Ex.: 15,15,25,26">
+            </label>
+            <label>Programmed
+              <input id="analyticsAudienceProgrammed" type="text" placeholder="Ex.: 13,24,24,24">
+            </label>
+          </div>
+        </fieldset>
 
-        <label class="full">Países (JSON array)
-          <textarea id="analyticsCountriesJson" rows="5" placeholder='Ex.: [{"country":"Brasil","listeners":17,"activePct":71.4,"activeListeners":12},{"country":"Estados Unidos","listeners":10,"activePct":10,"activeListeners":1}]'></textarea>
+        <label class="full">Países (1 por linha no formato: País | listeners | % ativos | ativos)
+          <textarea id="analyticsCountriesJson" rows="5" placeholder="Brasil | 17 | 71.4 | 12&#10;Estados Unidos | 10 | 10 | 1"></textarea>
         </label>
 
         <label>Próximo passo
