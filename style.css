@@ -355,3 +355,179 @@ input:focus,select:focus,textarea:focus{
 .is-standalone #sidebarInstallApp{
   display:none!important;
 }
+
+
+.analytics-layout{
+  grid-template-columns:minmax(360px, 540px) 1fr;
+  align-items:start;
+}
+.analytics-admin-panel{
+  position:sticky;
+  top:18px;
+}
+.analytics-display-panel{
+  min-height:720px;
+}
+.analytics-shell{
+  display:grid;
+  gap:18px;
+}
+.analytics-hero-card{
+  border-radius:26px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at top right, rgba(103,228,194,.12), transparent 26%),
+    radial-gradient(circle at left bottom, rgba(192,139,255,.12), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+    rgba(10,18,38,.90);
+  box-shadow:0 20px 54px rgba(0,0,0,.26);
+}
+.analytics-top{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  padding:22px 24px 10px;
+}
+.analytics-top-title{
+  font-size:1.45rem;
+  font-weight:800;
+  letter-spacing:-.03em;
+}
+.analytics-top-sub{
+  margin-top:6px;
+  color:#cad4eb;
+}
+.analytics-badge{
+  align-self:flex-start;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(135deg, rgba(138,168,255,.24), rgba(103,228,194,.18));
+  font-size:.78rem;
+  font-weight:700;
+}
+.analytics-tabs{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  padding:0 24px 18px;
+}
+.analytics-tab{
+  border:none;
+  border-radius:999px;
+  padding:10px 14px;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-weight:700;
+  box-shadow:none;
+}
+.analytics-tab.active{
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  color:#07111f;
+}
+.analytics-panel{
+  display:none;
+  padding:0 24px 24px;
+}
+.analytics-panel.active{
+  display:block;
+}
+.analytics-overview-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:18px;
+}
+.analytics-stat{
+  border-radius:18px;
+  padding:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.07);
+}
+.analytics-stat span{
+  display:block;
+  text-transform:uppercase;
+  font-size:.72rem;
+  letter-spacing:.1em;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+.analytics-stat strong{
+  display:block;
+  font-size:1.6rem;
+  letter-spacing:-.03em;
+}
+.analytics-stat small{
+  display:block;
+  margin-top:6px;
+  color:#cfd8ed;
+}
+.analytics-chart-card{
+  padding:18px;
+  border-radius:22px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.07);
+}
+.analytics-chart-card canvas{
+  width:100%!important;
+  height:320px!important;
+}
+.analytics-split{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:16px;
+}
+.analytics-countries{
+  display:grid;
+  gap:10px;
+}
+.analytics-country-row{
+  display:grid;
+  grid-template-columns:1.3fr .7fr .7fr .7fr;
+  gap:10px;
+  align-items:center;
+  padding:14px 16px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+}
+.analytics-country-row strong{
+  font-size:1rem;
+}
+.analytics-country-row span{
+  color:#cbd5eb;
+}
+.analytics-note{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  color:#d2dcf1;
+}
+.analytics-empty{
+  padding:24px;
+  border-radius:20px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+}
+.analytics-mini-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin:16px 0 0;
+}
+@media (max-width:1200px){
+  .analytics-layout{grid-template-columns:1fr}
+  .analytics-admin-panel{position:static}
+}
+@media (max-width:900px){
+  .analytics-overview-grid,.analytics-mini-grid{grid-template-columns:repeat(2,1fr)}
+  .analytics-split{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .analytics-overview-grid,.analytics-mini-grid{grid-template-columns:1fr}
+  .analytics-country-row{grid-template-columns:1fr 1fr}
+  .analytics-top{flex-direction:column}
+}

@@ -1,26 +1,20 @@
 # Vale Produção CRM Online Real
 
-Versão: **v22.0.0**
-Build: **2026-04-02 19:26:38**
+Versão: **v24.0.0**
+Build: **2026-04-06 19:11:33**
 
-## Evolução desta fase
-- visual premium renovado
-- analytics do artista com aparência mais impactante
-- botões, cards, fundo e painéis refinados
-- mesma base funcional preservada
-- nenhuma troca na configuração do Firebase
+## Evolução v24
+- analytics manual completo no estilo Spotify
+- overview com KPIs e gráfico
+- segments com donut e evolução de audiência
+- demographics com gênero e idade
+- location com países e métricas
+- visual impactante para artistas
+- mesma base Firebase preservada
 
 ## Compatibilidade
-Esta evolução foca em visual e apresentação.
-Ela preserva a base já construída para evitar impacto nos usuários e dados existentes.
-
-
-## Evolução v23
-- botão para instalar o app no dispositivo
-- manifest PWA
-- service worker para uso como aplicativo
-- ícones de instalação
-- mesma configuração Firebase preservada
-
-Versão: **v23.0.0**  
-Build: **2026-04-02 20:03:14**
+Esta evolução mantém:
+- mesmo projeto Firebase
+- mesmas credenciais
+- mesmas coleções principais
+- novos campos adicionados no analytics sem quebrar a base já existente

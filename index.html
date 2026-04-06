@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Vale Produção CRM Online Real</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div id="authScreen" class="auth-screen">
@@ -44,7 +45,7 @@
       </form>
 
       <div class="stack">
-        <div class="item"><div class="item-title">Build</div><div class="item-sub">v23.0.0 · 2026-04-02 19:26:38</div></div>
+        <div class="item"><div class="item-title">Build</div><div class="item-sub">v24.0.0 · 2026-04-02 19:26:38</div></div>
         <div class="item"><div class="item-title">Admin</div><div class="item-sub">O e-mail definido em <code>firebase-config.js</code> será admin.</div></div>
       </div>
       <p id="authMessage" class="status-line"></p>
@@ -62,7 +63,7 @@
         </div>
       </div>
       <nav id="navMenu" class="menu"></nav>
-      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v23.0.0 · 2026-04-02 19:26:38</div></div>
+      <div class="item glass"><div class="item-title">Build</div><div class="item-sub">v24.0.0 · 2026-04-02 19:26:38</div></div>
       <button id="sidebarInstallApp" class="secondary wide-btn">Instalar app</button>
       <button id="logoutBtn" class="danger wide-btn">Sair</button>
     </aside>
@@ -215,47 +216,155 @@
         </div>
       </section>
 
-      <section id="view-analytics" class="view">
-        <div class="two-col">
-          <article class="panel glass admin-only-block">
-            <div class="section-head"><h3>Lançar analytics manual</h3><span class="tag">sem API externa</span></div>
-            <form id="analyticsForm" class="form-grid">
-              <label>Projeto
-                <select id="analyticsProject" required></select>
-              </label>
-              <label>Data do relatório
-                <input id="analyticsDate" type="date" required>
-              </label>
-              <label>Streams
-                <input id="analyticsStreams" type="number" min="0" step="1">
-              </label>
-              <label>Visualizações
-                <input id="analyticsViews" type="number" min="0" step="1">
-              </label>
-              <label>Alcance
-                <input id="analyticsReach" type="number" min="0" step="1">
-              </label>
-              <label>Playlists
-                <input id="analyticsPlaylists" type="number" min="0" step="1">
-              </label>
-              <label>Engajamento
-                <input id="analyticsEngagement" type="text" placeholder="Ex.: bom, médio, alto">
-              </label>
-              <label>Próximo passo
-                <input id="analyticsNextStep" type="text" placeholder="Ex.: reforçar reels">
-              </label>
-              <label class="full">Observações
-                <textarea id="analyticsNotes" rows="3" placeholder="Resumo manual do desempenho"></textarea>
-              </label>
-              <div class="full actions-row"><button type="submit">Salvar analytics</button></div>
-            </form>
-          </article>
-          <article class="panel glass">
-            <div class="section-head"><h3>Analytics do artista</h3><span class="tag">visível ao cantor</span></div>
-            <div id="analyticsList" class="stack"></div>
-          </article>
+      
+<section id="view-analytics" class="view">
+  <div class="two-col analytics-layout">
+    <article class="panel glass admin-only-block analytics-admin-panel">
+      <div class="section-head">
+        <h3>Analytics manual nível Spotify</h3>
+        <span class="tag">sem API externa</span>
+      </div>
+      <form id="analyticsForm" class="form-grid">
+        <label>Projeto
+          <select id="analyticsProject" required></select>
+        </label>
+        <label>Data do relatório
+          <input id="analyticsDate" type="date" required>
+        </label>
+
+        <label>Listeners
+          <input id="analyticsListeners" type="number" min="0" step="1">
+        </label>
+        <label>Monthly active listeners
+          <input id="analyticsMonthlyActiveListeners" type="number" min="0" step="1">
+        </label>
+        <label>Streams
+          <input id="analyticsStreams" type="number" min="0" step="1">
+        </label>
+        <label>Streams / Listener
+          <input id="analyticsStreamsPerListener" type="number" min="0" step="0.01">
+        </label>
+        <label>Saves
+          <input id="analyticsSaves" type="number" min="0" step="1">
+        </label>
+        <label>Playlist adds
+          <input id="analyticsPlaylists" type="number" min="0" step="1">
+        </label>
+        <label>Followers
+          <input id="analyticsFollowers" type="number" min="0" step="1">
+        </label>
+        <label>Views
+          <input id="analyticsViews" type="number" min="0" step="1">
+        </label>
+        <label>Alcance
+          <input id="analyticsReach" type="number" min="0" step="1">
+        </label>
+        <label>Engajamento
+          <input id="analyticsEngagement" type="text" placeholder="Ex.: alto">
+        </label>
+
+        <fieldset class="full">
+          <legend>Audience / Segmentação</legend>
+          <div class="form-grid">
+            <label>Total audience
+              <input id="analyticsTotalAudience" type="number" min="0" step="1">
+            </label>
+            <label>Reactivated listeners
+              <input id="analyticsReactivatedListeners" type="number" min="0" step="1">
+            </label>
+            <label>New active listeners
+              <input id="analyticsNewActiveListeners" type="number" min="0" step="1">
+            </label>
+            <label>New listeners
+              <input id="analyticsNewListeners" type="number" min="0" step="1">
+            </label>
+            <label>% monthly active
+              <input id="analyticsSegmentMonthlyActive" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% previously active
+              <input id="analyticsSegmentPreviouslyActive" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% programmed
+              <input id="analyticsSegmentProgrammed" type="number" min="0" max="100" step="0.1">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="full">
+          <legend>Demografia</legend>
+          <div class="form-grid">
+            <label>% Female
+              <input id="analyticsGenderFemale" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% Male
+              <input id="analyticsGenderMale" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% Non-binary
+              <input id="analyticsGenderNonBinary" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% Not specified
+              <input id="analyticsGenderNotSpecified" type="number" min="0" max="100" step="0.1">
+            </label>
+
+            <label>% <18
+              <input id="analyticsAgeUnder18" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% 18-24
+              <input id="analyticsAge18_24" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% 25-34
+              <input id="analyticsAge25_34" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% 35-44
+              <input id="analyticsAge35_44" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% 45-54
+              <input id="analyticsAge45_54" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% 55-64
+              <input id="analyticsAge55_64" type="number" min="0" max="100" step="0.1">
+            </label>
+            <label>% 65+
+              <input id="analyticsAge65Plus" type="number" min="0" max="100" step="0.1">
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="full">Série do overview (JSON array)
+          <textarea id="analyticsOverviewTrend" rows="3" placeholder='Ex.: [2,1,1,3,8,2,1,1,0,2,1,3]'></textarea>
+        </label>
+
+        <label class="full">Série audience (JSON object)
+          <textarea id="analyticsAudienceTrend" rows="5" placeholder='Ex.: {"labels":["Mar 10","Mar 17","Mar 24","Mar 31"],"totalAudience":[41,52,54,56],"monthlyActive":[13,15,6,6],"previouslyActive":[15,15,25,26],"programmed":[13,24,24,24]}'></textarea>
+        </label>
+
+        <label class="full">Países (JSON array)
+          <textarea id="analyticsCountriesJson" rows="5" placeholder='Ex.: [{"country":"Brasil","listeners":17,"activePct":71.4,"activeListeners":12},{"country":"Estados Unidos","listeners":10,"activePct":10,"activeListeners":1}]'></textarea>
+        </label>
+
+        <label>Próximo passo
+          <input id="analyticsNextStep" type="text" placeholder="Ex.: reforçar reels">
+        </label>
+        <label class="full">Resumo / Observações
+          <textarea id="analyticsNotes" rows="3" placeholder="Resumo manual do desempenho"></textarea>
+        </label>
+
+        <div class="full actions-row">
+          <button type="submit">Salvar analytics completo</button>
         </div>
-      </section>
+      </form>
+    </article>
+
+    <article class="panel glass analytics-display-panel">
+      <div class="section-head">
+        <h3>Analytics do artista</h3>
+        <span class="tag">visual premium</span>
+      </div>
+      <div id="analyticsList" class="stack"></div>
+    </article>
+  </div>
+</section>
+
 
 
       <section id="view-portal" class="view">

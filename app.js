@@ -4,8 +4,9 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v23.0.0', datetime: '2026-04-02 20:03:14' };
+const BUILD = { version: 'v24.0.0', datetime: '2026-04-06 19:11:33' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
+let analyticsCharts = [];
 let deferredInstallPrompt = null;
 const live = { users: [], projects: [], schedule: [], approvals: [], finance: [], analytics: [], settings: {} };
 
@@ -117,6 +118,196 @@ function showApp(logged){
 
 
 function projectAnalytics(projectId){ return live.analytics.filter(a => a.projectId === projectId); }
+
+function destroyAnalyticsCharts(){
+  analyticsCharts.forEach(chart => { try { chart.destroy(); } catch(e) {} });
+  analyticsCharts = [];
+}
+function parseJsonSafe(value, fallback){
+  if (!value || !String(value).trim()) return fallback;
+  try { return JSON.parse(value); } catch(e) { return fallback; }
+}
+function normalizeAnalyticsRow(a){
+  return {
+    ...a,
+    listeners: Number(a.listeners || 0),
+    monthlyActiveListeners: Number(a.monthlyActiveListeners || 0),
+    streams: Number(a.streams || 0),
+    streamsPerListener: Number(a.streamsPerListener || 0),
+    saves: Number(a.saves || 0),
+    playlists: Number(a.playlists || 0),
+    followers: Number(a.followers || 0),
+    views: Number(a.views || 0),
+    reach: Number(a.reach || 0),
+    totalAudience: Number(a.totalAudience || 0),
+    reactivatedListeners: Number(a.reactivatedListeners || 0),
+    newActiveListeners: Number(a.newActiveListeners || 0),
+    newListeners: Number(a.newListeners || 0),
+    segmentMonthlyActive: Number(a.segmentMonthlyActive || 0),
+    segmentPreviouslyActive: Number(a.segmentPreviouslyActive || 0),
+    segmentProgrammed: Number(a.segmentProgrammed || 0),
+    genderFemale: Number(a.genderFemale || 0),
+    genderMale: Number(a.genderMale || 0),
+    genderNonBinary: Number(a.genderNonBinary || 0),
+    genderNotSpecified: Number(a.genderNotSpecified || 0),
+    ageUnder18: Number(a.ageUnder18 || 0),
+    age18_24: Number(a.age18_24 || 0),
+    age25_34: Number(a.age25_34 || 0),
+    age35_44: Number(a.age35_44 || 0),
+    age45_54: Number(a.age45_54 || 0),
+    age55_64: Number(a.age55_64 || 0),
+    age65Plus: Number(a.age65Plus || 0),
+    countries: Array.isArray(a.countries) ? a.countries : [],
+    overviewTrend: Array.isArray(a.overviewTrend) ? a.overviewTrend : [],
+    audienceTrend: typeof a.audienceTrend === 'object' && a.audienceTrend ? a.audienceTrend : { labels: [], totalAudience: [], monthlyActive: [], previouslyActive: [], programmed: [] }
+  };
+}
+function initAnalyticsInteractions(rows){
+  document.querySelectorAll('.analytics-tab').forEach(btn => {
+    btn.onclick = () => {
+      const shell = btn.closest('.analytics-shell');
+      shell.querySelectorAll('.analytics-tab').forEach(b => b.classList.remove('active'));
+      shell.querySelectorAll('.analytics-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      shell.querySelector(`[data-panel="${btn.dataset.target}"]`)?.classList.add('active');
+    };
+  });
+
+  if (typeof Chart === 'undefined') return;
+  destroyAnalyticsCharts();
+
+  rows.forEach(raw => {
+    const a = normalizeAnalyticsRow(raw);
+    const id = a.id;
+
+    const overviewCanvas = byId(`overviewChart_${id}`);
+    if (overviewCanvas) {
+      const values = a.overviewTrend.length ? a.overviewTrend : [a.listeners, a.listeners, a.listeners, a.listeners];
+      const labels = values.map((_, i) => `P${i+1}`);
+      analyticsCharts.push(new Chart(overviewCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Listeners',
+            data: values,
+            borderColor: '#8aa8ff',
+            backgroundColor: 'rgba(138,168,255,.20)',
+            tension: .35,
+            fill: true,
+            pointRadius: 0,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#b6c4e6' }, grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ticks: { color: '#b6c4e6' }, grid: { color: 'rgba(255,255,255,.05)' }, beginAtZero: true }
+          }
+        }
+      }));
+    }
+
+    const segmentCanvas = byId(`segmentChart_${id}`);
+    if (segmentCanvas) {
+      analyticsCharts.push(new Chart(segmentCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Monthly active', 'Previously active', 'Programmed'],
+          datasets: [{
+            data: [a.segmentMonthlyActive, a.segmentPreviouslyActive, a.segmentProgrammed],
+            backgroundColor: ['#1f6fe0', '#b340f4', '#4e9b88'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: { legend: { labels: { color: '#d6e0f5' } } }
+        }
+      }));
+    }
+
+    const audienceCanvas = byId(`audienceTrendChart_${id}`);
+    if (audienceCanvas) {
+      const tr = a.audienceTrend;
+      const labels = Array.isArray(tr.labels) && tr.labels.length ? tr.labels : ['Período'];
+      analyticsCharts.push(new Chart(audienceCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Total audience', data: Array.isArray(tr.totalAudience) && tr.totalAudience.length ? tr.totalAudience : [a.totalAudience], borderColor: '#111111', backgroundColor: 'transparent', tension: .3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Monthly active', data: Array.isArray(tr.monthlyActive) && tr.monthlyActive.length ? tr.monthlyActive : [a.monthlyActiveListeners], borderColor: '#1f6fe0', backgroundColor: 'transparent', tension: .3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Previously active', data: Array.isArray(tr.previouslyActive) && tr.previouslyActive.length ? tr.previouslyActive : [a.segmentPreviouslyActive], borderColor: '#b340f4', backgroundColor: 'transparent', tension: .3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Programmed', data: Array.isArray(tr.programmed) && tr.programmed.length ? tr.programmed : [a.segmentProgrammed], borderColor: '#4e9b88', backgroundColor: 'transparent', tension: .3, pointRadius: 0, borderWidth: 2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#d6e0f5' } } },
+          scales: {
+            x: { ticks: { color: '#b6c4e6' }, grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ticks: { color: '#b6c4e6' }, grid: { color: 'rgba(255,255,255,.05)' }, beginAtZero: true }
+          }
+        }
+      }));
+    }
+
+    const genderCanvas = byId(`genderChart_${id}`);
+    if (genderCanvas) {
+      analyticsCharts.push(new Chart(genderCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Female', 'Male', 'Non-binary', 'Not specified'],
+          datasets: [{
+            data: [a.genderFemale, a.genderMale, a.genderNonBinary, a.genderNotSpecified],
+            backgroundColor: ['#1f6fe0', '#e1158f', '#18b38c', '#ff5a3d'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '64%',
+          plugins: { legend: { labels: { color: '#d6e0f5' } } }
+        }
+      }));
+    }
+
+    const ageCanvas = byId(`ageChart_${id}`);
+    if (ageCanvas) {
+      analyticsCharts.push(new Chart(ageCanvas, {
+        type: 'bar',
+        data: {
+          labels: ['<18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
+          datasets: [{
+            label: 'Faixa etária %',
+            data: [a.ageUnder18, a.age18_24, a.age25_34, a.age35_44, a.age45_54, a.age55_64, a.age65Plus],
+            backgroundColor: ['#8aa8ff', '#8aa8ff', '#c08bff', '#8aa8ff', '#8aa8ff', '#8aa8ff', '#8aa8ff'],
+            borderRadius: 10,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#b6c4e6' }, grid: { display: false } },
+            y: { ticks: { color: '#b6c4e6' }, grid: { color: 'rgba(255,255,255,.05)' }, beginAtZero: true, max: 100 }
+          }
+        }
+      }));
+    }
+  });
+}
+
 function latestAnalytics(projectId){
   const rows = [...projectAnalytics(projectId)].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
   return rows[0] || null;
@@ -241,9 +432,7 @@ function renderPortal(){
   byId('portalProjects').innerHTML = projects.length
     ? projects.map(p => {
         const la = latestAnalytics(p.id);
-        const analyticsText = la
-          ? `<div class="portal-highlight">Último analytics · ${fmtDate(la.date)} · streams ${Number(la.streams||0).toLocaleString('pt-BR')} · alcance ${Number(la.reach||0).toLocaleString('pt-BR')}</div>`
-          : '';
+        const analyticsText = la ? `<div class="portal-highlight">Último analytics · ${fmtDate(la.date)} · listeners ${Number(la.listeners||0).toLocaleString('pt-BR')} · streams ${Number(la.streams||0).toLocaleString('pt-BR')} · followers ${Number(la.followers||0).toLocaleString('pt-BR')}</div>` : '';
         return `<div class="item">
           <div class="item-title">${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}</div>
           <div class="item-sub">Status ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)} · contrato ${p.contractStatus}</div>
@@ -287,36 +476,95 @@ function renderOperations(){
 
 function renderAnalytics(){
   const projects = visibleProjects();
-  const rows = live.analytics.filter(a => projects.some(p => p.id === a.projectId))
+  const rows = live.analytics
+    .filter(a => projects.some(p => p.id === a.projectId))
     .sort((a,b)=>(String(b.date||'').localeCompare(String(a.date||''))));
+
   byId('analyticsList').innerHTML = rows.length
-    ? rows.map(a => {
+    ? rows.map(raw => {
+        const a = normalizeAnalyticsRow(raw);
         const p = projectById(a.projectId);
         const artistName = profileByUid(p?.artistUid)?.stageName || profileByUid(p?.artistUid)?.name || 'Artista';
-        return `<div class="analytics-card">
-          <div class="analytics-hero">
+        const countries = a.countries.length
+          ? a.countries.map(c => `<div class="analytics-country-row"><strong>${c.country || '-'}</strong><span>${Number(c.listeners||0).toLocaleString('pt-BR')} listeners</span><span>${Number(c.activePct||0).toLocaleString('pt-BR')}% ativos</span><span>${Number(c.activeListeners||0).toLocaleString('pt-BR')} ativos</span></div>`).join('')
+          : `<div class="analytics-empty">Sem países lançados neste relatório.</div>`;
+
+        return `<div class="analytics-shell analytics-hero-card">
+          <div class="analytics-top">
             <div>
-              <div class="analytics-title">${artistName} — ${p?.title || ''}</div>
-              <div class="analytics-meta">Relatório ${fmtDate(a.date)}${a.nextStep ? ' · próximo passo: ' + a.nextStep : ''}</div>
+              <div class="analytics-top-title">${artistName} — ${p?.title || ''}</div>
+              <div class="analytics-top-sub">Relatório ${fmtDate(a.date)}${a.nextStep ? ' · próximo passo: ' + a.nextStep : ''}</div>
             </div>
-            <div class="analytics-pill">${a.engagement ? 'engajamento ' + a.engagement : 'analytics manual'}</div>
+            <div class="analytics-badge">${a.engagement ? 'engajamento ' + a.engagement : 'analytics manual'}</div>
           </div>
-          <div class="analytics-body">
-            <div class="kpi-row">
-              <div class="kpi-box"><span>Streams</span><strong>${Number(a.streams||0).toLocaleString('pt-BR')}</strong></div>
-              <div class="kpi-box"><span>Views</span><strong>${Number(a.views||0).toLocaleString('pt-BR')}</strong></div>
-              <div class="kpi-box"><span>Alcance</span><strong>${Number(a.reach||0).toLocaleString('pt-BR')}</strong></div>
-              <div class="kpi-box"><span>Playlists</span><strong>${Number(a.playlists||0).toLocaleString('pt-BR')}</strong></div>
+
+          <div class="analytics-tabs">
+            <button class="analytics-tab active" data-target="overview_${a.id}">Overview</button>
+            <button class="analytics-tab" data-target="segments_${a.id}">Segments</button>
+            <button class="analytics-tab" data-target="demographics_${a.id}">Demographics</button>
+            <button class="analytics-tab" data-target="location_${a.id}">Location</button>
+          </div>
+
+          <div class="analytics-panel active" data-panel="overview_${a.id}">
+            <div class="analytics-overview-grid">
+              <div class="analytics-stat"><span>Listeners</span><strong>${a.listeners.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Monthly active</span><strong>${a.monthlyActiveListeners.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Streams</span><strong>${a.streams.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Streams / Listener</span><strong>${a.streamsPerListener.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Saves</span><strong>${a.saves.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Playlist adds</span><strong>${a.playlists.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Followers</span><strong>${a.followers.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Reach / Views</span><strong>${a.reach.toLocaleString('pt-BR')} / ${a.views.toLocaleString('pt-BR')}</strong></div>
+            </div>
+            <div class="analytics-chart-card">
+              <canvas id="overviewChart_${a.id}"></canvas>
             </div>
             <div class="analytics-note">${a.notes || 'Sem resumo manual por enquanto.'}</div>
           </div>
+
+          <div class="analytics-panel" data-panel="segments_${a.id}">
+            <div class="analytics-split">
+              <div class="analytics-chart-card">
+                <canvas id="segmentChart_${a.id}"></canvas>
+              </div>
+              <div>
+                <div class="analytics-mini-grid">
+                  <div class="analytics-stat"><span>Total audience</span><strong>${a.totalAudience.toLocaleString('pt-BR')}</strong></div>
+                  <div class="analytics-stat"><span>Reactivated</span><strong>${a.reactivatedListeners.toLocaleString('pt-BR')}</strong></div>
+                  <div class="analytics-stat"><span>New active</span><strong>${a.newActiveListeners.toLocaleString('pt-BR')}</strong></div>
+                  <div class="analytics-stat"><span>New listeners</span><strong>${a.newListeners.toLocaleString('pt-BR')}</strong></div>
+                </div>
+                <div class="analytics-note">Monthly active ${a.segmentMonthlyActive.toLocaleString('pt-BR')}% · Previously active ${a.segmentPreviouslyActive.toLocaleString('pt-BR')}% · Programmed ${a.segmentProgrammed.toLocaleString('pt-BR')}%</div>
+              </div>
+            </div>
+            <div class="analytics-chart-card" style="margin-top:16px">
+              <canvas id="audienceTrendChart_${a.id}"></canvas>
+            </div>
+          </div>
+
+          <div class="analytics-panel" data-panel="demographics_${a.id}">
+            <div class="analytics-split">
+              <div class="analytics-chart-card">
+                <canvas id="genderChart_${a.id}"></canvas>
+              </div>
+              <div class="analytics-chart-card">
+                <canvas id="ageChart_${a.id}"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-panel" data-panel="location_${a.id}">
+            <div class="analytics-countries">${countries}</div>
+          </div>
         </div>`;
       }).join('')
-    : itemHtml('Sem analytics ainda', isAdmin() ? 'Lance o primeiro relatório manual.' : 'O produtor ainda não lançou dados de analytics.');
+    : `<div class="analytics-empty">${isAdmin() ? 'Lance o primeiro relatório manual.' : 'O produtor ainda não lançou dados de analytics.'}</div>`;
 
   if (byId('analyticsProject')) {
     byId('analyticsProject').innerHTML = live.projects.map(p => `<option value="${p.id}">${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}</option>`).join('');
   }
+
+  initAnalyticsInteractions(rows);
 }
 
 function renderSettings(){
@@ -677,14 +925,50 @@ function bindEvents(){
   byId('analyticsForm').addEventListener('submit', async e => {
     e.preventDefault();
     if(!isAdmin()) return;
+
+    const overviewTrend = parseJsonSafe(byId('analyticsOverviewTrend').value, []);
+    const audienceTrend = parseJsonSafe(byId('analyticsAudienceTrend').value, { labels: [], totalAudience: [], monthlyActive: [], previouslyActive: [], programmed: [] });
+    const countries = parseJsonSafe(byId('analyticsCountriesJson').value, []);
+
     await addDoc(collection(db, 'analytics'), {
       projectId: byId('analyticsProject').value,
       date: byId('analyticsDate').value,
+      listeners: Number(byId('analyticsListeners').value || 0),
+      monthlyActiveListeners: Number(byId('analyticsMonthlyActiveListeners').value || 0),
       streams: Number(byId('analyticsStreams').value || 0),
+      streamsPerListener: Number(byId('analyticsStreamsPerListener').value || 0),
+      saves: Number(byId('analyticsSaves').value || 0),
+      playlists: Number(byId('analyticsPlaylists').value || 0),
+      followers: Number(byId('analyticsFollowers').value || 0),
       views: Number(byId('analyticsViews').value || 0),
       reach: Number(byId('analyticsReach').value || 0),
-      playlists: Number(byId('analyticsPlaylists').value || 0),
       engagement: byId('analyticsEngagement').value.trim(),
+
+      totalAudience: Number(byId('analyticsTotalAudience').value || 0),
+      reactivatedListeners: Number(byId('analyticsReactivatedListeners').value || 0),
+      newActiveListeners: Number(byId('analyticsNewActiveListeners').value || 0),
+      newListeners: Number(byId('analyticsNewListeners').value || 0),
+      segmentMonthlyActive: Number(byId('analyticsSegmentMonthlyActive').value || 0),
+      segmentPreviouslyActive: Number(byId('analyticsSegmentPreviouslyActive').value || 0),
+      segmentProgrammed: Number(byId('analyticsSegmentProgrammed').value || 0),
+
+      genderFemale: Number(byId('analyticsGenderFemale').value || 0),
+      genderMale: Number(byId('analyticsGenderMale').value || 0),
+      genderNonBinary: Number(byId('analyticsGenderNonBinary').value || 0),
+      genderNotSpecified: Number(byId('analyticsGenderNotSpecified').value || 0),
+
+      ageUnder18: Number(byId('analyticsAgeUnder18').value || 0),
+      age18_24: Number(byId('analyticsAge18_24').value || 0),
+      age25_34: Number(byId('analyticsAge25_34').value || 0),
+      age35_44: Number(byId('analyticsAge35_44').value || 0),
+      age45_54: Number(byId('analyticsAge45_54').value || 0),
+      age55_64: Number(byId('analyticsAge55_64').value || 0),
+      age65Plus: Number(byId('analyticsAge65Plus').value || 0),
+
+      overviewTrend,
+      audienceTrend,
+      countries,
+
       nextStep: byId('analyticsNextStep').value.trim(),
       notes: byId('analyticsNotes').value.trim(),
       createdAt: serverTimestamp()
