@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v29.0.0', datetime: '2026-04-07 20:44:24' };
+const BUILD = { version: 'v30.0.0', datetime: '2026-04-07 21:46:23' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -15,23 +15,6 @@ const money = v => new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BR
 const fmtDate = d => !d ? 'Sem data' : d.split('-').reverse().join('/');
 const itemHtml = (t,s) => `<div class="item"><div class="item-title">${t}</div><div class="item-sub">${s}</div></div>`;
 const metricCard = (l,v) => `<article class="metric-card glass"><span>${l}</span><strong>${v}</strong></article>`;
-
-
-function priorityLevel(project){
-  if (launchedStatus(project) || priorityScore(project) === 0) return { label: 'Feito', className: 'priority-green' };
-  const score = priorityScore(project);
-  if (score >= 80 || projectStatus(project) === 'ATRASADO') return { label: 'Urgente', className: 'priority-red' };
-  if (score >= 30 || projectStatus(project) === 'EM RISCO') return { label: 'Urgência média', className: 'priority-yellow' };
-  return { label: 'Feito', className: 'priority-green' };
-}
-function priorityChipHtml(project){
-  const level = priorityLevel(project);
-  const extra = launchedStatus(project) || priorityScore(project) === 0 ? ' · prioridade 0' : '';
-  return `<span class="priority-chip ${level.className}"><span class="priority-dot"></span>${level.label}${extra}</span>`;
-}
-function priorityItemHtml(title, subtitle, project){
-  return `<div class="item"><div class="item-priority-wrap"><div><div class="item-title">${title}</div><div class="item-sub">${subtitle}</div></div>${priorityChipHtml(project)}</div></div>`;
-}
 
 function refreshBuildBadges(){
   const text = `${BUILD.version} · ${BUILD.datetime}`;
@@ -115,8 +98,8 @@ function collectAlerts(projects){
   projects.forEach(p => {
     if (launchedStatus(p)) return;
     const d = daysUntil(p.releaseDate);
-    if(d < 0 && !criticalChecklistComplete(p)) alerts.push({title:'Projeto atrasado', text:`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`});
-    if(d <= Number(live.settings.releaseAlertDays || 7) && d >= 0 && !criticalChecklistComplete(p)) alerts.push({title:'Lançamento próximo com pendência', text:`${p.title} lança em ${d} dia(s) e ainda tem etapas críticas pendentes.`});
+    if(d < 0) alerts.push({title:'Projeto atrasado', text:`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`});
+    if(d <= Number(live.settings.releaseAlertDays || 7) && d >= 0) alerts.push({title:'Lançamento próximo', text:`${p.title} lança em ${d} dia(s).`});
     if(!criticalChecklistComplete(p)) alerts.push({title:'Checklist crítico incompleto', text:`${p.title} ainda não concluiu as etapas críticas do lançamento.`});
     if((p.contractStatus || '') !== 'Assinado') alerts.push({title:'Contrato pendente', text:`${p.title} está com contrato ${String(p.contractStatus||'').toLowerCase()}.`});
   });
@@ -196,6 +179,42 @@ function parseJsonSafe(value, fallback){
   if (!value || !String(value).trim()) return fallback;
   try { return JSON.parse(value); } catch(e) { return fallback; }
 }
+
+function safeNum(v){ return Number(v || 0); }
+function inferMarketingInsights(a){
+  const insights = [];
+  const likes = safeNum(a.postLikes), comments = safeNum(a.postComments), shares = safeNum(a.postShares), postReach = safeNum(a.postReach);
+  const streams = safeNum(a.streams), listeners = safeNum(a.listeners), saves = safeNum(a.saves);
+  const followerDelta = safeNum(a.followerDelta), instagramGrowth = safeNum(a.instagramGrowth);
+  const postType = a.postType || 'Conteúdo';
+  const engagementScore = likes + comments * 4 + shares * 5;
+
+  if (followerDelta > 0 && engagementScore > 0) insights.push(`O conteúdo ${postType.toLowerCase()} ajudou no ganho de seguidores no período.`);
+  if (followerDelta < 0) insights.push('Houve perda de seguidores no período; revisar frequência, criativo e consistência das postagens.');
+  if (comments >= 10) insights.push('Os comentários estão fortes; existe sinal de comunidade e conversa real.');
+  if (likes > 0 && streams === 0) insights.push('Existe reação social, mas sem conversão em audição; reforçar CTA para ouvir.');
+  if (likes > 0 && streams > 0 && listeners > 0) insights.push('Há conversão entre divulgação e consumo musical.');
+  if (saves > 0 && listeners > 0 && (saves / Math.max(listeners,1)) > 0.2) insights.push('A taxa de saves está boa; o conteúdo parece ter valor de repetição.');
+  if (instagramGrowth >= 5) insights.push('O Instagram do artista teve crescimento relevante; manter a linha de conteúdo do período.');
+  if (safeNum(a.artistFacebookFollowers) > 0 && safeNum(a.artistFacebookFollowers) > safeNum(a.artistInstagramFollowers)) insights.push('O Facebook do artista está forte; vale adaptar a comunicação para esse público.');
+  if (postReach > 0 && comments <= 2 && likes <= 10) insights.push('A postagem alcançou pessoas, mas gerou baixa reação; testar legenda, capa ou gancho melhor.');
+  if (shares >= 5) insights.push('O conteúdo teve bom potencial de compartilhamento; repetir formato parecido.');
+
+  let diagnosis = 'Desempenho estável.';
+  if (followerDelta > 0 || instagramGrowth > 0 || streams > 0) diagnosis = 'Momento positivo de crescimento e/ou tração.';
+  if (followerDelta < 0) diagnosis = 'Momento de atenção: queda de base e necessidade de ajuste.';
+  if (engagementScore < 10 && streams < 20) diagnosis = 'Baixa tração no período; precisa reforçar marketing.';
+
+  let recommendation = 'Manter consistência de postagens e acompanhar o próximo relatório.';
+  if (likes > 0 && comments < Math.max(1, likes * 0.03)) recommendation = 'Usar legendas com chamada de interação para elevar comentários.';
+  if (followerDelta < 0) recommendation = 'Reforçar conteúdo curto, constância e CTA claro para seguir e ouvir.';
+  if (streams > 0 && saves > 0) recommendation = 'Aproveitar o momento com nova rodada de reels e repostar prova social.';
+  if (shares >= 5) recommendation = 'Transformar esse formato em série, porque houve sinal de distribuição orgânica.';
+
+  if (!insights.length) insights.push('Ainda há poucos dados para interpretação forte; continue alimentando os relatórios.');
+  return { diagnosis, recommendation, insights };
+}
+
 function normalizeAnalyticsRow(a){
   return {
     ...a,
@@ -226,6 +245,15 @@ function normalizeAnalyticsRow(a){
     age45_54: Number(a.age45_54 || 0),
     age55_64: Number(a.age55_64 || 0),
     age65Plus: Number(a.age65Plus || 0),
+    instagramGrowth: Number(a.instagramGrowth || 0),
+    artistInstagramFollowers: Number(a.artistInstagramFollowers || 0),
+    artistFacebookFollowers: Number(a.artistFacebookFollowers || 0),
+    valeInstagramFollowers: Number(a.valeInstagramFollowers || 0),
+    followerDelta: Number(a.followerDelta || 0),
+    postLikes: Number(a.postLikes || 0),
+    postComments: Number(a.postComments || 0),
+    postShares: Number(a.postShares || 0),
+    postReach: Number(a.postReach || 0),
     countries: Array.isArray(a.countries) ? a.countries : [],
     overviewTrend: Array.isArray(a.overviewTrend) ? a.overviewTrend : [],
     audienceTrend: typeof a.audienceTrend === 'object' && a.audienceTrend ? a.audienceTrend : { labels: [], totalAudience: [], monthlyActive: [], previouslyActive: [], programmed: [] }
@@ -382,11 +410,11 @@ function latestAnalytics(projectId){
   return rows[0] || null;
 }
 function riskReasons(project){
-  if (launchedStatus(project)) return [];
+  if (launchedStatus(project)) return ['Projeto já lançado'];
   const reasons = [];
   const d = daysUntil(project.releaseDate);
-  if (d < 0 && !criticalChecklistComplete(project)) reasons.push('Lançamento vencido');
-  if (d <= 7 && d >= 0 && !criticalChecklistComplete(project)) reasons.push('Lançamento em até 7 dias');
+  if (d < 0) reasons.push('Lançamento vencido');
+  if (d <= 7 && d >= 0) reasons.push('Lançamento em até 7 dias');
   if (!criticalChecklistComplete(project)) reasons.push('Checklist crítico incompleto');
   if ((project.contractStatus || '') !== 'Assinado') reasons.push('Contrato pendente');
   if (projectApprovals(project.id).some(a => a.status === 'Pendente')) reasons.push('Aprovação pendente');
@@ -396,14 +424,13 @@ function riskReasons(project){
 
 function renderDashboard(){
   const projects = visibleProjects();
-  const ativos = projects.filter(p => !launchedStatus(p));
-  const alerts = collectAlerts(ativos);
-  const top = [...ativos].sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,6);
-  const urgent = ativos.filter(p => daysUntil(p.releaseDate) <= 7).length;
+  const alerts = collectAlerts(projects);
+  const top = [...projects].sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,6);
+  const urgent = projects.filter(p => !launchedStatus(p) && daysUntil(p.releaseDate) <= 7).length;
   byId('view-dashboard').innerHTML = `
     <div class="dashboard-grid">
-      ${metricCard('Projetos ativos', ativos.length)}
-      ${metricCard('Em risco', ativos.filter(p=>projectStatus(p)==='EM RISCO').length)}
+      ${metricCard('Projetos', projects.length)}
+      ${metricCard('Em risco', projects.filter(p=>projectStatus(p)==='EM RISCO').length)}
       ${metricCard('Urgentes 7 dias', urgent)}
       ${metricCard('Lucro do mês', money(monthlyNet()))}
     </div>
@@ -411,7 +438,7 @@ function renderDashboard(){
       <article class="panel glass">
         <div class="section-head"><h3>Prioridade operacional</h3><span class="tag">urgência real</span></div>
         <div class="stack">
-          ${top.length ? top.map(p => priorityItemHtml(`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`, `Prioridade ${priorityScore(p)} · ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}`, p)).join('') : itemHtml('Sem projetos ativos', 'Nada crítico para agir agora.')}
+          ${top.length ? top.map(p => itemHtml(`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`, `Prioridade ${priorityScore(p)} · ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}`)).join('') : itemHtml('Sem projetos', 'Cadastre projetos para gerar prioridade automática.')}
         </div>
       </article>
       <article class="panel glass">
@@ -440,10 +467,10 @@ function renderProjects(){
     const node = tpl.content.firstElementChild.cloneNode(true);
     const artist = profileByUid(p.artistUid), status = projectStatus(p);
     node.querySelector('.project-title').textContent = `${artist?.stageName || artist?.name || 'Artista'} — ${p.title}`;
-    node.querySelector('.project-meta').textContent = `${p.type} · contrato ${p.contractStatus}${launchedStatus(p) ? ' · entregue' : ' · prioridade ' + priorityScore(p)}`;
+    node.querySelector('.project-meta').textContent = `${p.type} · contrato ${p.contractStatus} · prioridade ${priorityScore(p)}`;
     const badge = node.querySelector('.status-badge');
     badge.textContent = status; badge.classList.add(statusClass(status));
-    node.querySelector('.project-stats').innerHTML = `Lançamento: <strong>${fmtDate(p.releaseDate)}</strong><br>Status operacional: <strong>${projectStatus(p)}</strong><br>Valor contratado: <strong>${money(p.value||0)}</strong> · Lucro: <strong>${money(projectProfit(p.id))}</strong><br>Aprovações: <strong>${projectApprovals(p.id).length}</strong> · Cronograma: <strong>${projectSchedule(p.id).length}</strong>`;
+    node.querySelector('.project-stats').innerHTML = `Lançamento: <strong>${fmtDate(p.releaseDate)}</strong><br>Valor contratado: <strong>${money(p.value||0)}</strong> · Lucro: <strong>${money(projectProfit(p.id))}</strong><br>Aprovações: <strong>${projectApprovals(p.id).length}</strong> · Cronograma: <strong>${projectSchedule(p.id).length}</strong>`;
     node.querySelector('.mini-grid').innerHTML = [
       ['Briefing', p.pipeline.briefing],
       ['Contrato', p.pipeline.contract],
@@ -526,49 +553,24 @@ function renderAlerts(){
 
 function renderOperations(){
   if(!isAdmin()) return;
+  const projects = [...visibleProjects()].filter(p => !launchedStatus(p)).sort((a,b)=>priorityScore(b)-priorityScore(a));
+  const urgentRows = projects.filter(p => priorityScore(p) > 20).slice(0,10);
+  byId('operationsList').innerHTML = urgentRows.length
+    ? urgentRows.map(p => itemHtml(
+        `${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`,
+        `Prioridade ${priorityScore(p)} · ${riskReasons(p).join(' · ')}`
+      )).join('')
+    : itemHtml('Sem urgências críticas', 'Nenhum projeto exige ação imediata.');
 
-  const allProjects = [...live.projects];
-  const emProducao = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'EM PRODUÇÃO')
-    .sort((a,b)=>priorityScore(b)-priorityScore(a));
-  const prontos = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'PRONTO')
-    .sort((a,b)=>daysUntil(a.releaseDate)-daysUntil(b.releaseDate));
-  const emRisco = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'EM RISCO')
-    .sort((a,b)=>priorityScore(b)-priorityScore(a));
-  const atrasados = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'ATRASADO')
-    .sort((a,b)=>priorityScore(b)-priorityScore(a));
-  const lancados = allProjects.filter(p => launchedStatus(p))
-    .sort((a,b)=>String(b.releaseDate||'').localeCompare(String(a.releaseDate||'')));
-
-  const groups = [
-    ['Atrasados', atrasados, 'Exigem correção imediata'],
-    ['Em risco', emRisco, 'Próximos do prazo com pendências críticas'],
-    ['Prontos para lançar', prontos, 'Etapas críticas concluídas'],
-    ['Em produção', emProducao, 'Projetos em andamento'],
-    ['Lançados', lancados, 'Entregues e fora da fila de urgência']
-  ];
-
-  byId('operationsList').innerHTML = groups.map(([title, rows, desc]) => {
-    const body = rows.length
-      ? rows.slice(0, 8).map(p => priorityItemHtml(
-          `${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`,
-          `${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}${launchedStatus(p) ? ' · entregue' : ' · prioridade ' + priorityScore(p)}`,
-          p
-        )).join('')
-      : itemHtml('Nenhum projeto nesta faixa', desc);
-    return `<div class="item"><div class="item-title">${title}</div><div class="item-sub">${desc}</div><div class="stack" style="margin-top:12px">${body}</div></div>`;
-  }).join('');
-
-  const riskRows = [...atrasados, ...emRisco, ...prontos].slice(0, 12);
-  byId('riskChecklistList').innerHTML = riskRows.length
-    ? riskRows.map(p => {
+  byId('riskChecklistList').innerHTML = projects.length
+    ? projects.slice(0,10).map(p => {
         const reasons = riskReasons(p);
-        return priorityItemHtml(
+        return itemHtml(
           `${p.title} · ${fmtDate(p.releaseDate)}`,
-          reasons.length ? reasons.join(' · ') : 'Sem riscos relevantes',
-          p
+          reasons.length ? reasons.join(' · ') : 'Sem riscos relevantes'
         );
       }).join('')
-    : itemHtml('Sem riscos relevantes', 'Nada crítico na operação neste momento.');
+    : itemHtml('Sem projetos', 'Cadastre projetos para acompanhar risco.');
 }
 
 function renderAnalytics(){
@@ -652,6 +654,25 @@ function renderAnalytics(){
 
           <div class="analytics-panel" data-panel="location_${a.id}">
             <div class="analytics-countries">${countries}</div>
+          </div>
+
+          <div class="marketing-ai-box">
+            <h4>IA de marketing manual</h4>
+            <div class="analytics-mini-grid">
+              <div class="analytics-stat"><span>Instagram artista</span><strong>${a.artistInstagramFollowers.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Facebook artista</span><strong>${a.artistFacebookFollowers.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Instagram Vale</span><strong>${a.valeInstagramFollowers.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Delta seguidores</span><strong>${a.followerDelta.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Post curtidas</span><strong>${a.postLikes.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Comentários</span><strong>${a.postComments.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Compartilhamentos</span><strong>${a.postShares.toLocaleString('pt-BR')}</strong></div>
+              <div class="analytics-stat"><span>Alcance post</span><strong>${a.postReach.toLocaleString('pt-BR')}</strong></div>
+            </div>
+            <div class="marketing-ai-list" style="margin-top:14px">
+              <div class="row"><strong>Diagnóstico:</strong> ${inferMarketingInsights(a).diagnosis}</div>
+              <div class="row"><strong>Recomendação:</strong> ${inferMarketingInsights(a).recommendation}</div>
+              ${inferMarketingInsights(a).insights.map(text => `<div class="row">${text}</div>`).join('')}
+            </div>
           </div>
         </div>`;
       }).join('')
@@ -1107,6 +1128,17 @@ function bindEvents(){
       views: Number(byId('analyticsViews').value || 0),
       reach: Number(byId('analyticsReach').value || 0),
       engagement: byId('analyticsEngagement').value.trim(),
+      instagramGrowth: Number(byId('analyticsInstagramGrowth').value || 0),
+      artistInstagramFollowers: Number(byId('analyticsArtistInstagramFollowers').value || 0),
+      artistFacebookFollowers: Number(byId('analyticsArtistFacebookFollowers').value || 0),
+      valeInstagramFollowers: Number(byId('analyticsValeInstagramFollowers').value || 0),
+      followerDelta: Number(byId('analyticsFollowerDelta').value || 0),
+      postType: byId('analyticsPostType').value,
+      postDate: byId('analyticsPostDate').value,
+      postLikes: Number(byId('analyticsPostLikes').value || 0),
+      postComments: Number(byId('analyticsPostComments').value || 0),
+      postShares: Number(byId('analyticsPostShares').value || 0),
+      postReach: Number(byId('analyticsPostReach').value || 0),
 
       totalAudience: Number(byId('analyticsTotalAudience').value || 0),
       reactivatedListeners: Number(byId('analyticsReactivatedListeners').value || 0),

@@ -45,7 +45,7 @@
       </form>
 
       <div class="stack">
-        <div class="item"><div class="item-title">Build</div><div id="buildBadgeAuth" class="item-sub">v29.0.0 · 2026-04-07 20:44:24</div></div>
+        <div class="item"><div class="item-title">Build</div><div id="buildBadgeAuth" class="item-sub">v30.0.0 · 2026-04-07 21:46:23</div></div>
         <div class="item"><div class="item-title">Admin</div><div class="item-sub">O e-mail definido em <code>firebase-config.js</code> será admin.</div></div>
       </div>
       <p id="authMessage" class="status-line"></p>
@@ -63,7 +63,7 @@
         </div>
       </div>
       <nav id="navMenu" class="menu"></nav>
-      <div class="item glass"><div class="item-title">Build</div><div id="buildBadgeSidebar" class="item-sub">v29.0.0 · 2026-04-07 20:44:24</div></div>
+      <div class="item glass"><div class="item-title">Build</div><div id="buildBadgeSidebar" class="item-sub">v30.0.0 · 2026-04-07 21:46:23</div></div>
       <button id="sidebarInstallApp" class="secondary wide-btn">Instalar app</button>
       <button id="logoutBtn" class="danger wide-btn">Sair</button>
     </aside>
@@ -262,6 +262,59 @@
         <label>Engajamento
           <input id="analyticsEngagement" type="text" placeholder="Ex.: alto">
         </label>
+        <label>Crescimento seguidores Instagram artista (%)
+          <input id="analyticsInstagramGrowth" type="number" step="0.1" placeholder="Ex.: 8.5">
+        </label>
+
+        <fieldset class="full">
+          <legend>Marketing manual do artista</legend>
+          <div class="form-grid">
+            <label>Seguidores Instagram artista
+              <input id="analyticsArtistInstagramFollowers" type="number" min="0" step="1">
+            </label>
+            <label>Seguidores Facebook artista
+              <input id="analyticsArtistFacebookFollowers" type="number" min="0" step="1">
+            </label>
+            <label>Seguidores Instagram Vale Produção
+              <input id="analyticsValeInstagramFollowers" type="number" min="0" step="1">
+            </label>
+            <label>Variação seguidores no período
+              <input id="analyticsFollowerDelta" type="number" step="1" placeholder="Ex.: 25 ou -10">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="full">
+          <legend>Postagem da Vale Produção</legend>
+          <div class="form-grid">
+            <label>Tipo de postagem
+              <select id="analyticsPostType">
+                <option>Feed</option>
+                <option>Reels</option>
+                <option>Story</option>
+                <option>Teaser</option>
+                <option>Lançamento</option>
+                <option>Capa</option>
+                <option>Bastidores</option>
+              </select>
+            </label>
+            <label>Data da postagem
+              <input id="analyticsPostDate" type="date">
+            </label>
+            <label>Curtidas
+              <input id="analyticsPostLikes" type="number" min="0" step="1">
+            </label>
+            <label>Comentários
+              <input id="analyticsPostComments" type="number" min="0" step="1">
+            </label>
+            <label>Compartilhamentos
+              <input id="analyticsPostShares" type="number" min="0" step="1">
+            </label>
+            <label>Alcance da postagem
+              <input id="analyticsPostReach" type="number" min="0" step="1">
+            </label>
+          </div>
+        </fieldset>
 
         <fieldset class="full">
           <legend>Audience / Segmentação</legend>
@@ -390,7 +443,7 @@
     <article class="panel glass analytics-display-panel">
       <div class="section-head">
         <h3>Analytics do artista</h3>
-        <span class="tag">visual premium</span>
+        <span class="tag">visual premium + IA manual</span>
       </div>
       <div id="analyticsList" class="stack"></div>
     </article>

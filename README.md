@@ -1,11 +1,12 @@
 # Vale Produção CRM Online Real
 
-Versão: **v29.0.0**
-Build: **2026-04-07 20:44:24**
+Versão: **v30.0.0**
+Build: **2026-04-07 21:46:23**
 
-## Evolução v29
-- cores visuais por prioridade
-- vermelho para urgente
-- amarelo para urgência média
-- verde para feito / prioridade 0
+## Evolução v30
+- IA de marketing manual inteligente
+- campos para seguidores Instagram e Facebook do artista
+- campos para postagem da Vale Produção
+- leitura automática de marketing
+- recomendação prática sem API externa
 - mesma base Firebase preservada
