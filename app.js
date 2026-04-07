@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v27.0.1', datetime: '2026-04-07 17:46:20' };
+const BUILD = { version: 'v28.0.0', datetime: '2026-04-07 20:02:42' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -98,8 +98,8 @@ function collectAlerts(projects){
   projects.forEach(p => {
     if (launchedStatus(p)) return;
     const d = daysUntil(p.releaseDate);
-    if(d < 0) alerts.push({title:'Projeto atrasado', text:`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`});
-    if(d <= Number(live.settings.releaseAlertDays || 7) && d >= 0) alerts.push({title:'Lançamento próximo', text:`${p.title} lança em ${d} dia(s).`});
+    if(d < 0 && !criticalChecklistComplete(p)) alerts.push({title:'Projeto atrasado', text:`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`});
+    if(d <= Number(live.settings.releaseAlertDays || 7) && d >= 0 && !criticalChecklistComplete(p)) alerts.push({title:'Lançamento próximo com pendência', text:`${p.title} lança em ${d} dia(s) e ainda tem etapas críticas pendentes.`});
     if(!criticalChecklistComplete(p)) alerts.push({title:'Checklist crítico incompleto', text:`${p.title} ainda não concluiu as etapas críticas do lançamento.`});
     if((p.contractStatus || '') !== 'Assinado') alerts.push({title:'Contrato pendente', text:`${p.title} está com contrato ${String(p.contractStatus||'').toLowerCase()}.`});
   });
@@ -365,11 +365,11 @@ function latestAnalytics(projectId){
   return rows[0] || null;
 }
 function riskReasons(project){
-  if (launchedStatus(project)) return ['Projeto já lançado'];
+  if (launchedStatus(project)) return [];
   const reasons = [];
   const d = daysUntil(project.releaseDate);
-  if (d < 0) reasons.push('Lançamento vencido');
-  if (d <= 7 && d >= 0) reasons.push('Lançamento em até 7 dias');
+  if (d < 0 && !criticalChecklistComplete(project)) reasons.push('Lançamento vencido');
+  if (d <= 7 && d >= 0 && !criticalChecklistComplete(project)) reasons.push('Lançamento em até 7 dias');
   if (!criticalChecklistComplete(project)) reasons.push('Checklist crítico incompleto');
   if ((project.contractStatus || '') !== 'Assinado') reasons.push('Contrato pendente');
   if (projectApprovals(project.id).some(a => a.status === 'Pendente')) reasons.push('Aprovação pendente');
@@ -379,13 +379,14 @@ function riskReasons(project){
 
 function renderDashboard(){
   const projects = visibleProjects();
-  const alerts = collectAlerts(projects);
-  const top = [...projects].sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,6);
-  const urgent = projects.filter(p => !launchedStatus(p) && daysUntil(p.releaseDate) <= 7).length;
+  const ativos = projects.filter(p => !launchedStatus(p));
+  const alerts = collectAlerts(ativos);
+  const top = [...ativos].sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,6);
+  const urgent = ativos.filter(p => daysUntil(p.releaseDate) <= 7).length;
   byId('view-dashboard').innerHTML = `
     <div class="dashboard-grid">
-      ${metricCard('Projetos', projects.length)}
-      ${metricCard('Em risco', projects.filter(p=>projectStatus(p)==='EM RISCO').length)}
+      ${metricCard('Projetos ativos', ativos.length)}
+      ${metricCard('Em risco', ativos.filter(p=>projectStatus(p)==='EM RISCO').length)}
       ${metricCard('Urgentes 7 dias', urgent)}
       ${metricCard('Lucro do mês', money(monthlyNet()))}
     </div>
@@ -393,7 +394,7 @@ function renderDashboard(){
       <article class="panel glass">
         <div class="section-head"><h3>Prioridade operacional</h3><span class="tag">urgência real</span></div>
         <div class="stack">
-          ${top.length ? top.map(p => itemHtml(`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`, `Prioridade ${priorityScore(p)} · ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}`)).join('') : itemHtml('Sem projetos', 'Cadastre projetos para gerar prioridade automática.')}
+          ${top.length ? top.map(p => itemHtml(`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`, `Prioridade ${priorityScore(p)} · ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}`)).join('') : itemHtml('Sem projetos ativos', 'Nada crítico para agir agora.')}
         </div>
       </article>
       <article class="panel glass">
@@ -422,10 +423,10 @@ function renderProjects(){
     const node = tpl.content.firstElementChild.cloneNode(true);
     const artist = profileByUid(p.artistUid), status = projectStatus(p);
     node.querySelector('.project-title').textContent = `${artist?.stageName || artist?.name || 'Artista'} — ${p.title}`;
-    node.querySelector('.project-meta').textContent = `${p.type} · contrato ${p.contractStatus} · prioridade ${priorityScore(p)}`;
+    node.querySelector('.project-meta').textContent = `${p.type} · contrato ${p.contractStatus}${launchedStatus(p) ? ' · entregue' : ' · prioridade ' + priorityScore(p)}`;
     const badge = node.querySelector('.status-badge');
     badge.textContent = status; badge.classList.add(statusClass(status));
-    node.querySelector('.project-stats').innerHTML = `Lançamento: <strong>${fmtDate(p.releaseDate)}</strong><br>Valor contratado: <strong>${money(p.value||0)}</strong> · Lucro: <strong>${money(projectProfit(p.id))}</strong><br>Aprovações: <strong>${projectApprovals(p.id).length}</strong> · Cronograma: <strong>${projectSchedule(p.id).length}</strong>`;
+    node.querySelector('.project-stats').innerHTML = `Lançamento: <strong>${fmtDate(p.releaseDate)}</strong><br>Status operacional: <strong>${projectStatus(p)}</strong><br>Valor contratado: <strong>${money(p.value||0)}</strong> · Lucro: <strong>${money(projectProfit(p.id))}</strong><br>Aprovações: <strong>${projectApprovals(p.id).length}</strong> · Cronograma: <strong>${projectSchedule(p.id).length}</strong>`;
     node.querySelector('.mini-grid').innerHTML = [
       ['Briefing', p.pipeline.briefing],
       ['Contrato', p.pipeline.contract],
@@ -508,24 +509,47 @@ function renderAlerts(){
 
 function renderOperations(){
   if(!isAdmin()) return;
-  const projects = [...visibleProjects()].filter(p => !launchedStatus(p)).sort((a,b)=>priorityScore(b)-priorityScore(a));
-  const urgentRows = projects.filter(p => priorityScore(p) > 20).slice(0,10);
-  byId('operationsList').innerHTML = urgentRows.length
-    ? urgentRows.map(p => itemHtml(
-        `${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`,
-        `Prioridade ${priorityScore(p)} · ${riskReasons(p).join(' · ')}`
-      )).join('')
-    : itemHtml('Sem urgências críticas', 'Nenhum projeto exige ação imediata.');
 
-  byId('riskChecklistList').innerHTML = projects.length
-    ? projects.slice(0,10).map(p => {
+  const allProjects = [...live.projects];
+  const emProducao = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'EM PRODUÇÃO')
+    .sort((a,b)=>priorityScore(b)-priorityScore(a));
+  const prontos = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'PRONTO')
+    .sort((a,b)=>daysUntil(a.releaseDate)-daysUntil(b.releaseDate));
+  const emRisco = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'EM RISCO')
+    .sort((a,b)=>priorityScore(b)-priorityScore(a));
+  const atrasados = allProjects.filter(p => !launchedStatus(p) && projectStatus(p) === 'ATRASADO')
+    .sort((a,b)=>priorityScore(b)-priorityScore(a));
+  const lancados = allProjects.filter(p => launchedStatus(p))
+    .sort((a,b)=>String(b.releaseDate||'').localeCompare(String(a.releaseDate||'')));
+
+  const groups = [
+    ['Atrasados', atrasados, 'Exigem correção imediata'],
+    ['Em risco', emRisco, 'Próximos do prazo com pendências críticas'],
+    ['Prontos para lançar', prontos, 'Etapas críticas concluídas'],
+    ['Em produção', emProducao, 'Projetos em andamento'],
+    ['Lançados', lancados, 'Entregues e fora da fila de urgência']
+  ];
+
+  byId('operationsList').innerHTML = groups.map(([title, rows, desc]) => {
+    const body = rows.length
+      ? rows.slice(0, 8).map(p => itemHtml(
+          `${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`,
+          `${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}${launchedStatus(p) ? ' · entregue' : ' · prioridade ' + priorityScore(p)}`
+        )).join('')
+      : itemHtml('Nenhum projeto nesta faixa', desc);
+    return `<div class="item"><div class="item-title">${title}</div><div class="item-sub">${desc}</div><div class="stack" style="margin-top:12px">${body}</div></div>`;
+  }).join('');
+
+  const riskRows = [...atrasados, ...emRisco, ...prontos].slice(0, 12);
+  byId('riskChecklistList').innerHTML = riskRows.length
+    ? riskRows.map(p => {
         const reasons = riskReasons(p);
         return itemHtml(
           `${p.title} · ${fmtDate(p.releaseDate)}`,
           reasons.length ? reasons.join(' · ') : 'Sem riscos relevantes'
         );
       }).join('')
-    : itemHtml('Sem projetos', 'Cadastre projetos para acompanhar risco.');
+    : itemHtml('Sem riscos relevantes', 'Nada crítico na operação neste momento.');
 }
 
 function renderAnalytics(){
