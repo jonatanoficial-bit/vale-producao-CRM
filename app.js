@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v28.0.0', datetime: '2026-04-07 20:02:42' };
+const BUILD = { version: 'v29.0.0', datetime: '2026-04-07 20:44:24' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -15,6 +15,23 @@ const money = v => new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BR
 const fmtDate = d => !d ? 'Sem data' : d.split('-').reverse().join('/');
 const itemHtml = (t,s) => `<div class="item"><div class="item-title">${t}</div><div class="item-sub">${s}</div></div>`;
 const metricCard = (l,v) => `<article class="metric-card glass"><span>${l}</span><strong>${v}</strong></article>`;
+
+
+function priorityLevel(project){
+  if (launchedStatus(project) || priorityScore(project) === 0) return { label: 'Feito', className: 'priority-green' };
+  const score = priorityScore(project);
+  if (score >= 80 || projectStatus(project) === 'ATRASADO') return { label: 'Urgente', className: 'priority-red' };
+  if (score >= 30 || projectStatus(project) === 'EM RISCO') return { label: 'Urgência média', className: 'priority-yellow' };
+  return { label: 'Feito', className: 'priority-green' };
+}
+function priorityChipHtml(project){
+  const level = priorityLevel(project);
+  const extra = launchedStatus(project) || priorityScore(project) === 0 ? ' · prioridade 0' : '';
+  return `<span class="priority-chip ${level.className}"><span class="priority-dot"></span>${level.label}${extra}</span>`;
+}
+function priorityItemHtml(title, subtitle, project){
+  return `<div class="item"><div class="item-priority-wrap"><div><div class="item-title">${title}</div><div class="item-sub">${subtitle}</div></div>${priorityChipHtml(project)}</div></div>`;
+}
 
 function refreshBuildBadges(){
   const text = `${BUILD.version} · ${BUILD.datetime}`;
@@ -394,7 +411,7 @@ function renderDashboard(){
       <article class="panel glass">
         <div class="section-head"><h3>Prioridade operacional</h3><span class="tag">urgência real</span></div>
         <div class="stack">
-          ${top.length ? top.map(p => itemHtml(`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`, `Prioridade ${priorityScore(p)} · ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}`)).join('') : itemHtml('Sem projetos ativos', 'Nada crítico para agir agora.')}
+          ${top.length ? top.map(p => priorityItemHtml(`${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`, `Prioridade ${priorityScore(p)} · ${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}`, p)).join('') : itemHtml('Sem projetos ativos', 'Nada crítico para agir agora.')}
         </div>
       </article>
       <article class="panel glass">
@@ -532,9 +549,10 @@ function renderOperations(){
 
   byId('operationsList').innerHTML = groups.map(([title, rows, desc]) => {
     const body = rows.length
-      ? rows.slice(0, 8).map(p => itemHtml(
+      ? rows.slice(0, 8).map(p => priorityItemHtml(
           `${profileByUid(p.artistUid)?.stageName || profileByUid(p.artistUid)?.name || 'Artista'} — ${p.title}`,
-          `${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}${launchedStatus(p) ? ' · entregue' : ' · prioridade ' + priorityScore(p)}`
+          `${projectStatus(p)} · lançamento ${fmtDate(p.releaseDate)}${launchedStatus(p) ? ' · entregue' : ' · prioridade ' + priorityScore(p)}`,
+          p
         )).join('')
       : itemHtml('Nenhum projeto nesta faixa', desc);
     return `<div class="item"><div class="item-title">${title}</div><div class="item-sub">${desc}</div><div class="stack" style="margin-top:12px">${body}</div></div>`;
@@ -544,9 +562,10 @@ function renderOperations(){
   byId('riskChecklistList').innerHTML = riskRows.length
     ? riskRows.map(p => {
         const reasons = riskReasons(p);
-        return itemHtml(
+        return priorityItemHtml(
           `${p.title} · ${fmtDate(p.releaseDate)}`,
-          reasons.length ? reasons.join(' · ') : 'Sem riscos relevantes'
+          reasons.length ? reasons.join(' · ') : 'Sem riscos relevantes',
+          p
         );
       }).join('')
     : itemHtml('Sem riscos relevantes', 'Nada crítico na operação neste momento.');

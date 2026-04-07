@@ -571,3 +571,47 @@ input:focus,select:focus,textarea:focus{
   display:block;
   margin-bottom:6px;
 }
+
+
+.priority-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:.82rem;
+  font-weight:800;
+  letter-spacing:.02em;
+  border:1px solid rgba(255,255,255,.08);
+}
+.priority-red{
+  background:rgba(255,110,110,.18);
+  color:#ffd8d8;
+  box-shadow:inset 0 0 0 1px rgba(255,110,110,.08);
+}
+.priority-yellow{
+  background:rgba(255,212,122,.18);
+  color:#ffeab7;
+  box-shadow:inset 0 0 0 1px rgba(255,212,122,.08);
+}
+.priority-green{
+  background:rgba(103,228,194,.18);
+  color:#d9fff3;
+  box-shadow:inset 0 0 0 1px rgba(103,228,194,.08);
+}
+.priority-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:currentColor;
+  opacity:.9;
+}
+.item-priority-wrap{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+@media (max-width:700px){
+  .item-priority-wrap{flex-direction:column}
+}

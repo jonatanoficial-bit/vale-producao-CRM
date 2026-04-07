@@ -1,11 +1,11 @@
 # Vale Produção CRM Online Real
 
-Versão: **v28.0.0**
-Build: **2026-04-07 20:02:42**
+Versão: **v29.0.0**
+Build: **2026-04-07 20:44:24**
 
-## Evolução v28
-- operação organizada por faixas de status
-- lançados separados da fila de urgência
-- alertas mais limpos e coerentes
-- dashboard focado só em projetos ativos
+## Evolução v29
+- cores visuais por prioridade
+- vermelho para urgente
+- amarelo para urgência média
+- verde para feito / prioridade 0
 - mesma base Firebase preservada
