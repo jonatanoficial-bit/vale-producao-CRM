@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v26.0.0', datetime: '2026-04-06 22:26:25' };
+const BUILD = { version: 'v27.0.0', datetime: '2026-04-06 22:51:38' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -771,34 +771,84 @@ async function seedData(){
 }
 
 
+
+function deviceInstallMode(){
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  const isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|Edg|OPR/i.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  return { ua, isIOS, isAndroid, isSafari, isStandalone };
+}
 function updateInstallButtonsVisibility(){
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  document.body.classList.toggle('is-standalone', standalone);
+  const mode = deviceInstallMode();
+  document.body.classList.toggle('is-standalone', mode.isStandalone);
   ['btnInstallApp','sidebarInstallApp'].forEach(id => {
     const el = byId(id);
     if (!el) return;
-    if (standalone) {
+    if (mode.isStandalone) {
       el.style.display = 'none';
     } else {
-      el.style.display = deferredInstallPrompt ? '' : '';
+      el.style.display = '';
       el.disabled = false;
       el.title = '';
     }
   });
 }
+function openInstallModal(html){
+  const modal = byId('installModal');
+  const content = byId('installModalContent');
+  if (!modal || !content) return alert('Abra o menu do navegador e escolha instalar app ou adicionar à tela inicial.');
+  content.innerHTML = html;
+  modal.classList.remove('hidden');
+}
+function closeInstallModal(){
+  const modal = byId('installModal');
+  if (modal) modal.classList.add('hidden');
+}
+function installHelpHtml(){
+  const mode = deviceInstallMode();
+  if (mode.isIOS && mode.isSafari) {
+    return `
+      <div class="item"><div class="item-title">iPhone / iPad (Safari)</div><div class="item-sub">O iPhone não abre instalação automática por botão. Use o compartilhamento do Safari.</div></div>
+      <div class="install-steps">
+        <div class="install-step"><strong>1.</strong> Toque no botão de compartilhar do Safari.</div>
+        <div class="install-step"><strong>2.</strong> Role as opções e toque em <b>Adicionar à Tela de Início</b>.</div>
+        <div class="install-step"><strong>3.</strong> Confirme em <b>Adicionar</b>.</div>
+      </div>`;
+  }
+  if (mode.isAndroid) {
+    return `
+      <div class="item"><div class="item-title">Android</div><div class="item-sub">Se o navegador não mostrar a instalação automática, use o menu do navegador.</div></div>
+      <div class="install-steps">
+        <div class="install-step"><strong>1.</strong> Toque no menu de três pontos do navegador.</div>
+        <div class="install-step"><strong>2.</strong> Escolha <b>Instalar app</b>, <b>Adicionar à tela inicial</b> ou opção parecida.</div>
+        <div class="install-step"><strong>3.</strong> Confirme a instalação.</div>
+      </div>`;
+  }
+  return `
+    <div class="item"><div class="item-title">Computador / outros navegadores</div><div class="item-sub">Use a opção de instalar app no menu do navegador.</div></div>
+    <div class="install-steps">
+      <div class="install-step"><strong>1.</strong> Abra o menu do navegador.</div>
+      <div class="install-step"><strong>2.</strong> Escolha <b>Instalar app</b> ou opção equivalente.</div>
+      <div class="install-step"><strong>3.</strong> Confirme a instalação.</div>
+    </div>`;
+}
 async function handleInstallApp(){
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  if (standalone) return alert('O app já está instalado neste dispositivo.');
+  const mode = deviceInstallMode();
+  if (mode.isStandalone) return alert('O app já está instalado neste dispositivo.');
   if (deferredInstallPrompt) {
     deferredInstallPrompt.prompt();
     const choice = await deferredInstallPrompt.userChoice;
     if (choice.outcome === 'accepted') {
       deferredInstallPrompt = null;
       updateInstallButtonsVisibility();
+    } else {
+      openInstallModal(installHelpHtml());
     }
     return;
   }
-  alert('Se o botão de instalação nativa não aparecer, abra o menu do navegador e escolha "Instalar app" ou "Adicionar à tela inicial".');
+  openInstallModal(installHelpHtml());
 }
 function registerPwa(){
   if ('serviceWorker' in navigator) {
@@ -812,11 +862,12 @@ function registerPwa(){
   window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
     updateInstallButtonsVisibility();
+    closeInstallModal();
   });
   updateInstallButtonsVisibility();
 }
-
 function bindTabs(){
+
   byId('tabLogin').onclick = () => {
     byId('tabLogin').classList.add('active');
     byId('tabSignup').classList.remove('active');

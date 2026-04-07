@@ -540,3 +540,34 @@ input:focus,select:focus,textarea:focus{
 }
 
 .status-lancado{background:rgba(103,228,194,.18);color:#d6fff1}
+
+
+.install-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(3,8,20,.72);
+  backdrop-filter:blur(8px);
+}
+.install-dialog{
+  width:min(680px,100%);
+  padding:22px;
+  border-radius:26px;
+}
+.install-steps{
+  display:grid;
+  gap:12px;
+}
+.install-step{
+  padding:14px 16px;
+  border-radius:18px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+}
+.install-step strong{
+  display:block;
+  margin-bottom:6px;
+}
