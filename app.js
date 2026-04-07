@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-const BUILD = { version: 'v27.0.0', datetime: '2026-04-06 22:51:38' };
+const BUILD = { version: 'v27.0.1', datetime: '2026-04-07 17:46:20' };
 let app, auth, db, currentUser = null, currentProfile = null, unsubs = [];
 let analyticsCharts = [];
 let deferredInstallPrompt = null;
@@ -15,6 +15,14 @@ const money = v => new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BR
 const fmtDate = d => !d ? 'Sem data' : d.split('-').reverse().join('/');
 const itemHtml = (t,s) => `<div class="item"><div class="item-title">${t}</div><div class="item-sub">${s}</div></div>`;
 const metricCard = (l,v) => `<article class="metric-card glass"><span>${l}</span><strong>${v}</strong></article>`;
+
+function refreshBuildBadges(){
+  const text = `${BUILD.version} · ${BUILD.datetime}`;
+  const auth = byId('buildBadgeAuth');
+  const side = byId('buildBadgeSidebar');
+  if (auth) auth.textContent = text;
+  if (side) side.textContent = text;
+}
 
 function setAuthMessage(text, danger=false){
   const el = byId('authMessage');
@@ -852,7 +860,15 @@ async function handleInstallApp(){
 }
 function registerPwa(){
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('./service-worker.js');
+        if (reg.update) reg.update();
+      } catch(e) {}
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   }
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -1109,6 +1125,7 @@ function initFirebase(){
 }
 
 bindEvents();
+refreshBuildBadges();
 registerPwa();
 if(initFirebase()) {
   onAuthStateChanged(auth, async user => {
